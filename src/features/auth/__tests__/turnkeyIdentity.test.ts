@@ -20,7 +20,6 @@ const createEmbeddedWallet = vi.fn<(opts: unknown) => Promise<unknown>>();
 const setTurnkeyProvider = vi.fn<(provider: unknown) => void>();
 const createEmbeddedProvider =
   vi.fn<(opts: { account: unknown }) => unknown>();
-const requestGasGrant = vi.fn<(input: unknown) => Promise<unknown>>();
 const connect = vi.fn();
 const reconnect = vi.fn();
 const removeQueries = vi.fn();
@@ -33,14 +32,12 @@ let wagmi = {
   isConnecting: false,
   isReconnecting: false,
 };
-let stage = "no-account";
 let gatewayToken: string | null = null;
 
 vi.mock("@liq/react", () => ({
   AUTHED_QUERY_PREFIXES: [["positions"]],
   AuthState: { Authenticated: "authenticated" },
   useTurnkey: () => turnkey,
-  useSessionStage: () => stage,
   useGatewayStore: Object.assign(
     (selector: (s: unknown) => unknown) => selector({ token: gatewayToken }),
     { getState: () => ({ clearToken }) },
@@ -61,14 +58,11 @@ vi.mock("wagmi", () => ({
   useConnect: () => ({ connect, connectors: [{ id: "turnkey" }] }),
   useReconnect: () => ({ reconnect }),
 }));
-vi.mock("../../wallet/gasGrant", () => ({
-  requestGasGrant: (input: unknown) => requestGasGrant(input),
+vi.mock("../../../config/chain", () => ({
+  megaethTestnet: { id: 6343, rpcUrls: { default: { http: ["https://rpc.test"] } } },
 }));
-vi.mock("../../../config/chain", () => ({ megaethTestnet: { id: 6343 } }));
 vi.mock("../../../config/env", () => ({
   env: {
-    rpcUrl: "https://rpc.test",
-    gatewayUrl: "https://gw.test/v1",
     turnkey: { orgId: "org", authProxyUrl: "https://ap.test", authProxyConfigId: "cfg" },
   },
 }));
@@ -137,14 +131,12 @@ async function settle(): Promise<void> {
 beforeEach(() => {
   vi.clearAllMocks();
   createEmbeddedProvider.mockReturnValue({ mock: "provider" });
-  requestGasGrant.mockResolvedValue({ funded: true });
   createEmbeddedWallet.mockImplementation(async () => ({
     address: "0xwallet",
     account: { signMessage: vi.fn(async () => "0xsig") },
   }));
   turnkey = { authState: "authenticated", session: { organizationId: "sub-1" } };
   wagmi = { address: undefined, isConnected: false, isConnecting: false, isReconnecting: false };
-  stage = "no-account";
   gatewayToken = null;
   seen.value = null;
   queryClient = new QueryClient({
@@ -184,7 +176,6 @@ describe("подписант суб-организации", () => {
     expect(createEmbeddedProvider).toHaveBeenCalledTimes(1);
 
     createEmbeddedProvider.mockReturnValue({ mock: "provider" });
-  requestGasGrant.mockResolvedValue({ funded: true });
   createEmbeddedWallet.mockImplementation(async () => ({
       address: "0xsecond",
       account: { signMessage: vi.fn(async () => "0xsig2") },
@@ -219,7 +210,6 @@ describe("подписант суб-организации", () => {
     expect(createEmbeddedWallet).toHaveBeenCalledTimes(1);
 
     createEmbeddedProvider.mockReturnValue({ mock: "provider" });
-  requestGasGrant.mockResolvedValue({ funded: true });
   createEmbeddedWallet.mockImplementation(async () => ({
       address: "0xwallet",
       account: { signMessage: vi.fn(async () => "0xsig") },
@@ -263,23 +253,6 @@ describe("подключение к wagmi", () => {
     render();
     await settle();
     expect(connect).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe("долив газа", () => {
-  it("просится один раз на личность", async () => {
-    render();
-    await settle();
-    render();
-    await settle();
-    expect(requestGasGrant).toHaveBeenCalledTimes(1);
-  });
-
-  it("не просится, когда аккаунт уже есть", async () => {
-    stage = "ready";
-    render();
-    await settle();
-    expect(requestGasGrant).not.toHaveBeenCalled();
   });
 });
 

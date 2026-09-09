@@ -11,10 +11,10 @@ import type { Page } from "@playwright/test";
 import { TEST_ADDRESS } from "./constants";
 
 /** Must match `STORAGE_KEY` in @liqpro/liq-onchain. */
-export const SESSION_STORAGE_KEY = "liq.sess.v1";
+const SESSION_STORAGE_KEY = "liq.sess.v1";
 
 /** The shape `SessionKeyManager.persist()` writes (bigints as strings). */
-export interface PersistedSession {
+interface PersistedSession {
   id: string;
   sessionPriv: string;
   sessionPub: string;

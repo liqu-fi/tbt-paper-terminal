@@ -1,8 +1,9 @@
+import { formatUsd, wadToNumber } from "@liq/core";
 import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
 
-import { DASH, fmtSignedUsd, fmtUsd, toNum } from "../../lib/format";
+import { DASH, fmtSignedUsd } from "../../lib/format";
 import { DepositDialog } from "./DepositDialog";
 import { useAccountSummary } from "./useAccountSummary";
 import { WithdrawDialog } from "./WithdrawDialog";
@@ -36,17 +37,17 @@ export function AccountPanel() {
         <Row
           label="Equity"
           testid="account-equity"
-          value={summary.equity === undefined ? DASH : fmtUsd(summary.equity)}
+          value={summary.equity === undefined ? DASH : formatUsd(summary.equity)}
         />
         <Row
           label="Borrowed"
           testid="account-borrowed"
-          value={fmtUsd(summary.borrowed)}
+          value={formatUsd(summary.borrowed)}
         />
         <Row
           label="Exposure"
           testid="account-exposure"
-          value={fmtUsd(summary.exposure)}
+          value={formatUsd(summary.exposure)}
         />
         <Row
           label="Account Leverage"
@@ -54,7 +55,7 @@ export function AccountPanel() {
           value={
             summary.leverage === undefined
               ? DASH
-              : toNum(summary.leverage).toFixed(2)
+              : wadToNumber(summary.leverage).toFixed(2)
           }
         />
       </div>

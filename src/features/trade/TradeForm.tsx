@@ -12,12 +12,13 @@ import {
   useOrderSubmission,
   useTradeStore,
 } from "@liq/react";
+import { sanitizeDecimal } from "@liq/core";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { sanitizeDecimal } from "../../lib/decimal";
+import { parseOrZero } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { EntryTpSlFields } from "./EntryTpSlFields";
 import { ExecutionFlags } from "./ExecutionFlags";
@@ -106,11 +107,7 @@ export function TradeForm() {
   // The active tab's price field, parsed (0n = blank/unparseable).
   function parsedTabPrice(): bigint {
     if (tab === "Market") return markPrice;
-    try {
-      return Price.parse(limitPrice);
-    } catch {
-      return 0n;
-    }
+    return parseOrZero(Price.parse, limitPrice);
   }
   const tabPriceReady = parsedTabPrice() > 0n;
 
@@ -135,13 +132,7 @@ export function TradeForm() {
       orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET",
       above: boolean,
     ) => {
-      if (!raw) return;
-      let triggerPrice: bigint;
-      try {
-        triggerPrice = Price.parse(raw);
-      } catch {
-        return;
-      }
+      const triggerPrice = parseOrZero(Price.parse, raw);
       if (triggerPrice <= 0n) return;
       submitAttached.mutate({
         kind: "conditional",
@@ -252,7 +243,7 @@ export function TradeForm() {
                 <TabsTrigger
                   key={t}
                   value={t}
-                  data-testid={`trade-tab-${tabSlug(t)}`}
+                  data-testid={`trade-tab-${t.toLowerCase()}`}
                 >
                   {t}
                 </TabsTrigger>
@@ -365,13 +356,4 @@ export function TradeForm() {
       </div>
     </div>
   );
-}
-
-const TAB_SLUG: Record<Tab, string> = {
-  Market: "market",
-  Limit: "limit",
-};
-
-function tabSlug(tab: Tab): string {
-  return TAB_SLUG[tab];
 }

@@ -1,7 +1,7 @@
+import { fmtPrice } from "@/lib/format";
 import { formatRatio, type BookSnapshot } from "@liq/sdk";
 import { useTradeStore } from "@liq/react";
 
-import { fmtPrice } from "@/lib/format";
 
 import { BookRow } from "./BookRow";
 import { askSlots, bidSlots, fmtBookPrice, ratioPct } from "./bookView";

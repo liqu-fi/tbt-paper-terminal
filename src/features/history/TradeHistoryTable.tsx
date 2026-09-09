@@ -1,20 +1,13 @@
 import type { TradeRow } from "@liq/api-client";
 import { useAccountId, useTradesRestQuery } from "@liq/react";
+import { formatQty, formatUsd, truncateAddress } from "@liq/core";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useMemo } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
 
-import {
-  DASH,
-  fmtHash,
-  fmtPrice,
-  fmtQty,
-  fmtSignedUsd,
-  fmtTime,
-  fmtUsd,
-} from "../../lib/format";
+import { DASH, fmtPrice, fmtSignedUsd, fmtTime } from "../../lib/format";
 import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 interface Row {
@@ -57,7 +50,7 @@ const columns = helper.columns([
   helper.accessor((r) => Number(r.trade.size), {
     id: "size",
     header: "Size",
-    cell: (info) => fmtQty(info.row.original.trade.size),
+    cell: (info) => formatQty(info.row.original.trade.size),
   }),
   helper.accessor((r) => r.trade.role ?? "", {
     id: "role",
@@ -74,7 +67,7 @@ const columns = helper.columns([
     // бесплатная сделка.
     cell: (info) => {
       const fee = info.row.original.trade.fee;
-      return fee === null ? DASH : fmtUsd(fee);
+      return fee === null ? DASH : formatUsd(fee);
     },
   }),
   helper.accessor((r) => Number(r.trade.realizedPnl ?? 0n), {
@@ -97,7 +90,7 @@ const columns = helper.columns([
       const hash = info.row.original.trade.txHash;
       return (
         <span className="text-muted">
-          {hash === null ? DASH : fmtHash(hash)}
+          {hash === null ? DASH : truncateAddress(hash)}
         </span>
       );
     },

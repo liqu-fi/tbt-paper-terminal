@@ -1,12 +1,9 @@
+import { truncateAddress } from "@liq/core";
 import { useLiqSignOut, useTurnkey } from "@liq/react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 import { Button } from "@/components/ui/button";
 import { e2eWallet, turnkeyLoginEnabled } from "../../config/env";
-
-function short(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
 
 /** Разметка кнопки адреса. Что делает клик — решают две обёртки ниже. */
 function AddressButton({
@@ -23,7 +20,7 @@ function AddressButton({
       title="Disconnect"
       data-testid="wallet-address-button"
     >
-      {short(address)}
+      {truncateAddress(address)}
     </button>
   );
 }

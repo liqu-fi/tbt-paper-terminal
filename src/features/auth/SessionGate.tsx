@@ -8,7 +8,8 @@ import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
 import { type ReactNode, useEffect } from "react";
 import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 
-import { env, turnkeyLoginEnabled } from "../../config/env";
+import { megaethTestnet } from "../../config/chain";
+import { turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
 import { SignInPanel } from "./SignInPanel";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
@@ -60,7 +61,7 @@ function SessionGateInner({ children }: { children: ReactNode }) {
   // walletClient, so every on-chain write (createAccount) and the SIWE sign-in
   // fail with "walletClient is required" / "Wallet not connected".
   const account = useAccount();
-  const wrongChain = account.isConnected && account.chainId !== env.chainId;
+  const wrongChain = account.isConnected && account.chainId !== megaethTestnet.id;
   const switchChain = useSwitchChain();
 
   const createAccount = useCreateAccountMutation();
@@ -109,11 +110,11 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     return (
       <Centered testid="session-wrong-chain">
         <p className="text-muted">
-          Wrong network. Switch your wallet to MegaETH (chainId {env.chainId}).
+          Wrong network. Switch your wallet to MegaETH (chainId {megaethTestnet.id}).
         </p>
         <Button
           disabled={switchChain.isPending}
-          onClick={() => switchChain.switchChain({ chainId: env.chainId })}
+          onClick={() => switchChain.switchChain({ chainId: megaethTestnet.id })}
           data-testid="switch-chain-button"
         >
           {switchChain.isPending ? "Switching…" : "Switch to MegaETH"}
@@ -192,12 +193,11 @@ function Centered({
  * Что показать вместо сырого `error.message` при отказе создания аккаунта.
  *
  * @remarks
- * Спека §5 и таблица краевых случаев называют это единственным местом, ради
- * которого вообще делался долив газа: на деплое без его ручек (задокументи-
- * рованный 404) кошелёк без ETH иначе объясняется сырым текстом реверта
- * viem — пользователь смотрит на "execution reverted" и не понимает, что ему
- * нужно прислать ETH. Остальные отказы (не про газ) показываются как есть —
- * `isInsufficientGas` целится только в нехватку средств на комиссию.
+ * Встроенный кошелёк создаётся пустым, и первая ончейн-запись без ETH иначе
+ * объясняется сырым текстом реверта viem — пользователь смотрит на
+ * "execution reverted" и не понимает, что ему нужно прислать ETH. Остальные
+ * отказы (не про газ) показываются как есть — `isInsufficientGas` целится
+ * только в нехватку средств на комиссию.
  */
 function createAccountErrorMessage(error: Error, address: string | undefined): string {
   if (!isInsufficientGas(error)) return error.message;

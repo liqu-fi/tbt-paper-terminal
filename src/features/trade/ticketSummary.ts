@@ -12,7 +12,7 @@ import {
 } from "@liq/sdk";
 
 /** Одна сторона предполагаемого ордера. */
-export interface TicketSide {
+interface TicketSide {
   /** Знаковый размер: положительный — лонг, отрицательный — шорт. */
   sizeDelta: Qty;
   /**

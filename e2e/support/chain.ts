@@ -50,7 +50,7 @@ for (const item of combinedAbi) {
 const AGGREGATE3_SELECTOR = toFunctionSelector(multicall3Abi[0] as AbiFunction);
 
 /** Selector of the collateral write — used to mark a reverting deposit/withdraw. */
-export const MODIFY_COLLATERAL_SELECTOR = toFunctionSelector(
+const MODIFY_COLLATERAL_SELECTOR = toFunctionSelector(
   combinedAbi.find(
     (i) => i.type === "function" && i.name === "modifyCollateral",
   ) as AbiFunction,
@@ -67,11 +67,6 @@ export const SET_BOOK_MODE_SELECTOR = toFunctionSelector(
 export const TOKEN_OF_OWNER_SELECTOR = toFunctionSelector(
   combinedAbi.find(
     (i) => i.type === "function" && i.name === "tokenOfOwnerByIndex",
-  ) as AbiFunction,
-);
-export const GET_OPEN_POSITION_SELECTOR = toFunctionSelector(
-  combinedAbi.find(
-    (i) => i.type === "function" && i.name === "getOpenPosition",
   ) as AbiFunction,
 );
 /** The read `useEnrichedPositions` (0.42+) actually fires — see mockChain's hold. */

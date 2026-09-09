@@ -98,7 +98,7 @@ export function LiqSetup({ children }: { children: ReactNode }) {
       authProxyUrl={authProxyUrl}
       authProxyConfigId={authProxyConfigId}
       walletConnectProjectId={env.walletConnectId || undefined}
-      chainIds={[String(env.chainId)]}
+      chainIds={[String(megaethTestnet.id)]}
       authMethods={methods}
       methodOrder={methodOrder}
       provisionEmbeddedWallet

@@ -20,7 +20,7 @@ const MIN_SLOTS = 4;
  */
 const MAX_SLOTS = 25;
 
-export interface BookSlots {
+interface BookSlots {
   /** Ref на контейнер сетки — за его высотой и следим. */
   ref: (node: HTMLElement | null) => void;
   /** Число слотов НА СТОРОНУ при текущей высоте панели. */

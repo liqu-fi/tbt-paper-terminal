@@ -1,5 +1,6 @@
 import type { PositionEpisode } from "@liq/api-client";
 import { useAccountId, usePositionHistoryQuery } from "@liq/react";
+import { formatQty, formatUsd } from "@liq/core";
 import { createColumnHelper } from "@tanstack/react-table";
 import { TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
@@ -7,14 +8,7 @@ import { useMemo } from "react";
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
 
-import {
-  DASH,
-  fmtPrice,
-  fmtQty,
-  fmtSignedUsd,
-  fmtTime,
-  fmtUsd,
-} from "../../lib/format";
+import { DASH, fmtPrice, fmtSignedUsd, fmtTime } from "../../lib/format";
 import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 interface Row {
@@ -96,7 +90,7 @@ const columns = helper.columns([
   helper.accessor((r) => Number(r.episode.maxSize), {
     id: "size",
     header: "Max Size",
-    cell: (info) => fmtQty(info.row.original.episode.maxSize),
+    cell: (info) => formatQty(info.row.original.episode.maxSize),
   }),
   helper.accessor((r) => Number(r.episode.realizedPnl ?? 0n), {
     id: "rpnl",
@@ -116,7 +110,7 @@ const columns = helper.columns([
     header: "Fees",
     cell: (info) => {
       const fees = info.row.original.episode.feesUsd;
-      return fees === null ? DASH : fmtUsd(fees);
+      return fees === null ? DASH : formatUsd(fees);
     },
   }),
   helper.accessor((r) => r.episode.closedBy, {

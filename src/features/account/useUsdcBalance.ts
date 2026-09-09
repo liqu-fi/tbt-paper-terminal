@@ -1,8 +1,8 @@
 import { getChainConfig } from "@liq/sdk";
 import { useLiqOnchain, useNetworkId, useWallet } from "@liq/react";
+import { usdcToWad } from "@liq/core";
 import { useQuery } from "@tanstack/react-query";
 
-import { usdcToWad } from "../../lib/decimal";
 
 /**
  * Wallet USDC balance — the token a perps deposit actually spends — read in its

@@ -8,6 +8,7 @@ import {
   useTransactionMutation,
   useWallet,
 } from "@liq/react";
+import { formatUsd, wadToFixed } from "@liq/core";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -25,8 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { fmtUsd, wadToFixed } from "../../lib/format";
 
 /**
  * Снятие и разворот в одной транзакции — через TrustedMulticallForwarder,
@@ -53,15 +54,6 @@ const UNWRAP_ABI = parseAbi([
 const WAD_TO_USDC = 10n ** 12n;
 
 type ForwarderCall = { target: `0x${string}`; requireSuccess: boolean; callData: Hex };
-
-function parseAmount(amount: string): bigint {
-  if (!amount) return 0n;
-  try {
-    return Margin.parse(amount);
-  } catch {
-    return 0n;
-  }
-}
 
 export function WithdrawDialog({
   open,
@@ -106,7 +98,7 @@ export function WithdrawDialog({
   // этот запрет в той же транзакции, поэтому потолком служит available; если
   // позиции его не отпустят, откажет сам контракт — ошибка ниже.
   const limit = hasDebt ? margins?.available : margins?.withdrawable;
-  const amountWad = parseAmount(amount);
+  const amountWad = parseOrZero(Margin.parse, amount);
   const exceedsLimit = limit !== undefined && amountWad > limit;
   const invalid = exceedsLimit;
 
@@ -224,7 +216,7 @@ export function WithdrawDialog({
             className="mb-3 rounded border border-short/40 bg-short/10 p-2 text-[11px] text-short"
             data-testid="withdraw-debt-notice"
           >
-            ⚠ Account debt: {fmtUsd(debt ?? 0n)}. Withdrawals are blocked until
+            ⚠ Account debt: {formatUsd(debt ?? 0n)}. Withdrawals are blocked until
             repaid — this repays your debt (from wallet funds) and withdraws in
             one transaction.
           </div>
@@ -233,7 +225,7 @@ export function WithdrawDialog({
           <div className="mb-1 flex justify-between text-[11px] text-muted">
             <span>Available to withdraw</span>
             <span className="text-text" data-testid="withdraw-balance">
-              {fmtUsd(limit)}
+              {formatUsd(limit)}
             </span>
           </div>
         )}

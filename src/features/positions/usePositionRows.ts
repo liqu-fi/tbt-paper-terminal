@@ -16,7 +16,7 @@ import { useCallback, useMemo } from "react";
 
 import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
-export type EnrichedPosition = NonNullable<
+type EnrichedPosition = NonNullable<
   ReturnType<typeof useEnrichedPositions>["data"]
 >[number];
 
@@ -35,7 +35,7 @@ export interface PositionRow {
 }
 
 /** Чем кончился проход закрытия. */
-export interface CloseOutcome {
+interface CloseOutcome {
   closed: number;
   failed: number;
   /** Скобки закрытых позиций, снятые заодно. */

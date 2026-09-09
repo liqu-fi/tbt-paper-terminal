@@ -31,8 +31,8 @@ deposit → sign & submit orders → watch live updates**. Single-market, neutra
 > **Вход — только через Turnkey.** Задайте `VITE_TURNKEY_ORG_ID` и
 > `VITE_TURNKEY_AUTH_PROXY_CONFIG_ID` из дашборда Turnkey (раздел Wallet Kit) — без них экран
 > входа объясняет, чего не хватает. Вход по коду на почту или подписью внешнего кошелька создаёт
-> пользователю кошелёк в TEE; шлюз доливает ему газа на первую транзакцию через `POST /auth/gas` —
-> на деплое без этой ручки вход работает, но ETH придётся прислать самому.
+> пользователю кошелёк в TEE; он создаётся пустым — ETH на газ для первой транзакции нужно прислать
+> самому (ссылка на фаусет MegaETH есть в диалоге Faucet).
 
 3. **Install & run:**
    ```bash
@@ -73,8 +73,8 @@ Every step maps to a hook from `@liq/react` (or a class from `@liq/sdk`):
 
 **Key facts:** auth is **SIWE** (personal_sign), not EIP-712 — only orders are EIP-712 signed.
 Order numeric fields are decimal strings of 18-dec bigints. `sizeDelta` is signed (negative = short).
-Both deploy environments share chainId 6343 — `VITE_DEPLOY_ENV` (baked into `process.env.DEPLOY_ENV`
-by Vite) selects the contract set.
+Both deploy environments share chainId 6343 — `VITE_DEPLOY_ENV` (handed to the SDK via `setDeployEnv`
+in `src/deploy-env-init.ts`) selects the contract set; chain and RPC come from the SDK's `getViemChain`.
 
 ## Where things live
 

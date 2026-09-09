@@ -1,4 +1,5 @@
 import type { SettlementLedgerRow } from "@liq/api-client";
+import { formatQty, formatUsd, truncateAddress } from "@liq/core";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
@@ -6,15 +7,7 @@ import { useMemo } from "react";
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
 
-import {
-  DASH,
-  fmtHash,
-  fmtPrice,
-  fmtQty,
-  fmtSignedUsd,
-  fmtTime,
-  fmtUsd,
-} from "../../lib/format";
+import { DASH, fmtPrice, fmtSignedUsd, fmtTime } from "../../lib/format";
 import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 import { useAccountLedger } from "./useAccountLedger";
 
@@ -69,7 +62,7 @@ const columns = helper.columns([
     header: "Size Δ",
     cell: (info) => {
       const d = info.row.original.ledger.sizeDelta;
-      return d === null ? DASH : fmtQty(d);
+      return d === null ? DASH : formatQty(d);
     },
   }),
   helper.accessor((r) => Number(r.ledger.fillPrice ?? 0n), {
@@ -95,7 +88,7 @@ const columns = helper.columns([
     header: "Interest",
     cell: (info) => {
       const i = info.row.original.ledger.interest;
-      return i === null ? DASH : fmtUsd(i);
+      return i === null ? DASH : formatUsd(i);
     },
   }),
   helper.accessor((r) => Number(r.ledger.totalFees ?? 0n), {
@@ -103,7 +96,7 @@ const columns = helper.columns([
     header: "Fees",
     cell: (info) => {
       const f = info.row.original.ledger.totalFees;
-      return f === null ? DASH : fmtUsd(f);
+      return f === null ? DASH : formatUsd(f);
     },
   }),
   helper.accessor((r) => Number(r.ledger.netBalanceDelta ?? 0n), {
@@ -115,7 +108,7 @@ const columns = helper.columns([
     id: "tx",
     header: "Tx",
     cell: (info) => (
-      <span className="text-muted">{fmtHash(info.getValue())}</span>
+      <span className="text-muted">{truncateAddress(info.getValue())}</span>
     ),
   }),
 ]);

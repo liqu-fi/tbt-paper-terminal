@@ -6,7 +6,7 @@ import {
 } from "@liq/sdk";
 
 /** Условный ордер, который надо подать. */
-export interface BracketOrder {
+interface BracketOrder {
   marketId: bigint;
   sizeDelta: bigint;
   side: Side;
@@ -17,7 +17,7 @@ export interface BracketOrder {
 }
 
 /** Что сделать, чтобы скобки позиции стали такими, как просят. */
-export interface TpSlPlan {
+interface TpSlPlan {
   /** Идентификаторы заявок под отмену. */
   cancel: string[];
   submit: BracketOrder[];

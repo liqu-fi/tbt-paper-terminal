@@ -51,9 +51,9 @@ export const ADDR = {
 } as const;
 
 /** Canonical Multicall3 (same on every chain; in the app's chain config). */
-export const MULTICALL3 = lower("0xcA11bde05977b3631167028862bE2a173976CA11");
+const MULTICALL3 = lower("0xcA11bde05977b3631167028862bE2a173976CA11");
 
-export type LogicalContract =
+type LogicalContract =
   | "perpsMarketProxy"
   | "perpsAccountProxy"
   | "trustedMulticallForwarder"
@@ -276,7 +276,7 @@ export const perpsMarketProxyAbi = [
 ] as const satisfies Abi;
 
 /** Minimal ERC-20 reads/writes that the deposit builder may perform. */
-export const erc20Abi = [
+const erc20Abi = [
   {
     name: "balanceOf",
     type: "function",

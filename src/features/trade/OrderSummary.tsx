@@ -1,4 +1,5 @@
-import { fmtPrice, fmtQty, fmtUsd } from "../../lib/format";
+import { formatQty, formatUsd } from "@liq/core";
+import { fmtPrice } from "../../lib/format";
 import type { TicketSummary } from "./ticketSummary";
 
 /**
@@ -29,9 +30,9 @@ export function OrderSummary({
       className="flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-surface-2 p-1.5 text-[10px]"
       data-testid="order-summary"
     >
-      <Row label="Order qty." value={fmtQty(summary.qty)} unit={baseSymbol} testid="order-qty" />
-      <Row label="Order value" value={fmtUsd(summary.value)} unit={quoteSymbol} testid="order-value" />
-      <Row label="Cost" value={fmtUsd(summary.cost)} unit={quoteSymbol} testid="order-cost" />
+      <Row label="Order qty." value={formatQty(summary.qty)} unit={baseSymbol} testid="order-qty" />
+      <Row label="Order value" value={formatUsd(summary.value)} unit={quoteSymbol} testid="order-value" />
+      <Row label="Cost" value={formatUsd(summary.cost)} unit={quoteSymbol} testid="order-cost" />
       <div className="flex justify-between">
         <span className="text-muted">Liq. Price</span>
         <span data-testid="order-liq-price">

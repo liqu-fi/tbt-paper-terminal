@@ -1,5 +1,14 @@
-import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
-import { useClaimFaucetMutation, useFaucetState, useNetworkId, useWallet } from "@liq/react";
+import {
+  INSUFFICIENT_GAS_MESSAGE,
+  isInsufficientGas,
+  USDC_DECIMALS,
+} from "@liq/core";
+import {
+  useClaimFaucetMutation,
+  useFaucetState,
+  useNetworkId,
+  useWallet,
+} from "@liq/react";
 import { getChainConfig } from "@liq/sdk";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
@@ -11,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { USDC_DECIMALS } from "../../lib/decimal";
 import { faucetRow, fmtRemaining } from "./faucetRow";
 
 /** Тестовый ETH на газ раздаёт сама сеть; наш фаусет — только USDC. */

@@ -1,4 +1,5 @@
 import { abs, Side } from "@liq/sdk";
+import { formatQty, formatUsd } from "@liq/core";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Pencil, X } from "lucide-react";
 import { useState } from "react";
@@ -10,20 +11,28 @@ import {
   DASH,
   fmtLeverage,
   fmtPrice,
-  fmtQty,
   fmtSignedPct,
   fmtSignedUsd,
-  fmtUsd,
 } from "../../lib/format";
 import { ClosePositionsDialog } from "./ClosePositionsDialog";
-import {
-  PositionActionsContext,
-  usePositionActions,
-} from "./PositionActionsContext";
 import { TpSlDialog } from "./TpSlDialog";
 import { type PositionRow, usePositionRows } from "./usePositionRows";
 
 const helper = createColumnHelper<typeof features, PositionRow>();
+
+/**
+ * Действия таблицы едут через `table.options.meta`, а не полем строки: колонки
+ * объявлены на уровне модуля и до состояния компонента не дотягиваются, а
+ * `Close All` живёт в шапке, где строки нет вовсе.
+ */
+interface PositionActions {
+  /** Спросить подтверждение на закрытие перечисленных позиций. */
+  requestClose: (rows: readonly PositionRow[]) => void;
+  /** Открыть правку скобок одной позиции. */
+  requestEdit: (row: PositionRow) => void;
+  /** Идёт ли проход закрытия — обе кнопки на это время выключены. */
+  closing: boolean;
+}
 
 const columns = helper.columns([
   helper.accessor((r) => r.symbol, {
@@ -61,9 +70,9 @@ const columns = helper.columns([
       const r = info.row.original;
       return (
         <span className="flex flex-col leading-tight">
-          <span>{fmtUsd(r.position.notional)}</span>
+          <span>{formatUsd(r.position.notional)}</span>
           <span className="text-[11px] text-muted">
-            ≈ {fmtQty(abs(r.position.size))}
+            ≈ {formatQty(abs(r.position.size))}
           </span>
         </span>
       );
@@ -97,7 +106,7 @@ const columns = helper.columns([
     header: "Margin",
     cell: (info) => {
       const m = info.row.original.position.initialMarginUsd;
-      return m === undefined ? DASH : fmtUsd(m);
+      return m === undefined ? DASH : formatUsd(m);
     },
   }),
   helper.accessor((r) => Number(r.position.accruedFunding ?? 0n), {
@@ -134,19 +143,39 @@ const columns = helper.columns([
   helper.display({
     id: "tpsl",
     header: "TP / SL",
-    cell: (info) => <TpSlCell row={info.row.original} />,
+    cell: (info) => (
+      <TpSlCell
+        row={info.row.original}
+        actions={info.table.options.meta as PositionActions}
+      />
+    ),
   }),
   helper.display({
     id: "actions",
-    header: () => <CloseAllHeader />,
+    header: (info) => (
+      <CloseAllHeader
+        rows={info.table.options.data}
+        actions={info.table.options.meta as PositionActions}
+      />
+    ),
     enableHiding: false,
-    cell: (info) => <RowActions row={info.row.original} />,
+    cell: (info) => (
+      <RowActions
+        row={info.row.original}
+        actions={info.table.options.meta as PositionActions}
+      />
+    ),
   }),
 ]);
 
 /** Цены скобок и карандаш рядом — по макету. */
-function TpSlCell({ row }: { row: PositionRow }) {
-  const { requestEdit } = usePositionActions();
+function TpSlCell({
+  row,
+  actions,
+}: {
+  row: PositionRow;
+  actions: PositionActions;
+}) {
   const { takeProfit, stopLoss } = row.brackets;
 
   return (
@@ -163,7 +192,7 @@ function TpSlCell({ row }: { row: PositionRow }) {
         type="button"
         className="text-muted hover:text-text"
         title="Edit TP / SL"
-        onClick={() => requestEdit(row)}
+        onClick={() => actions.requestEdit(row)}
         data-testid={`edit-tpsl-${row.position.marketId}`}
       >
         <Pencil className="h-3 w-3" />
@@ -173,9 +202,13 @@ function TpSlCell({ row }: { row: PositionRow }) {
 }
 
 /** Красный `Close All` в шапке последней колонки — по макету. */
-function CloseAllHeader() {
-  const { rows, requestClose, closing } = usePositionActions();
-
+function CloseAllHeader({
+  rows,
+  actions: { requestClose, closing },
+}: {
+  rows: readonly PositionRow[];
+  actions: PositionActions;
+}) {
   return (
     <button
       type="button"
@@ -189,9 +222,13 @@ function CloseAllHeader() {
   );
 }
 
-function RowActions({ row }: { row: PositionRow }) {
-  const { requestClose, closing } = usePositionActions();
-
+function RowActions({
+  row,
+  actions: { requestClose, closing },
+}: {
+  row: PositionRow;
+  actions: PositionActions;
+}) {
   return (
     <span className="flex items-center justify-end gap-2">
       <button
@@ -239,21 +276,21 @@ export function PositionsTable() {
     }
   }
 
+  const actions: PositionActions = {
+    requestClose: (next) => {
+      setError(null);
+      setTarget(next);
+    },
+    requestEdit: setEditing,
+    closing: isClosing,
+  };
+
   return (
-    <PositionActionsContext.Provider
-      value={{
-        rows,
-        requestClose: (next) => {
-          setError(null);
-          setTarget(next);
-        },
-        requestEdit: setEditing,
-        closing: isClosing,
-      }}
-    >
+    <>
       <DataTable
         data={rows}
         columns={columns}
+        meta={actions}
         testid="positions-table"
         rowId={(r) => r.position.marketId.toString()}
         loading={isLoading}
@@ -284,7 +321,7 @@ export function PositionsTable() {
         onClose={() => setTarget(EMPTY_TARGET)}
         onConfirm={() => void confirmClose()}
       />
-    </PositionActionsContext.Provider>
+    </>
   );
 }
 

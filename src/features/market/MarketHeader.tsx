@@ -1,10 +1,10 @@
-import { compactUsd } from "@liq/core";
+import { compactUsd, formatRatio, formatUsd } from "@liq/core";
 import { useAvailableMarginQuery, usePricesQuery } from "@liq/react";
 import { useState } from "react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { DASH, fmtPrice, fmtUsd, toNum } from "../../lib/format";
+import { DASH, fmtPrice } from "../../lib/format";
 import { DepositDialog } from "../account/DepositDialog";
 import { FaucetDialog } from "../account/FaucetDialog";
 import { WithdrawDialog } from "../account/WithdrawDialog";
@@ -78,7 +78,7 @@ export function MarketHeader() {
               отформатированный числом, показал бы измеренные 0.0000 %. */}
           <span data-testid="funding-rate">
             {funding?.available && funding.rate !== null
-              ? `${(toNum(funding.rate) * 100).toFixed(4)}%`
+              ? formatRatio(funding.rate, { minDecimals: 4, maxDecimals: 4 })
               : DASH}
           </span>
         </MarketStat>
@@ -96,7 +96,7 @@ export function MarketHeader() {
             className="font-semibold text-text"
             data-testid="available-margin"
           >
-            {margins ? fmtUsd(margins.available) : DASH}
+            {margins ? formatUsd(margins.available) : DASH}
           </span>
         </span>
         <button

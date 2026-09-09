@@ -7,7 +7,7 @@ import {
 } from "@liq/react";
 import { useMemo } from "react";
 
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 /** Строка таблицы открытых ордеров: ордер плюс подпись рынка и отмена. */
 export interface OrderRow {
@@ -44,9 +44,7 @@ export function useOpenOrderRows(): {
     () =>
       [...open, ...conditional].map((order) => ({
         order,
-        symbol:
-          markets.find((m) => m.id.toString() === order.marketId)?.symbol ??
-          order.marketId,
+        symbol: marketSymbol(markets, order.marketId),
         cancel: (id: string) => cancel.mutate(id),
         cancelling: cancel.isPending,
         cancellable: !isInFlight(order.status),

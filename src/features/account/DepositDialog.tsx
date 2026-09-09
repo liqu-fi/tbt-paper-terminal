@@ -1,5 +1,6 @@
 import { Margin } from "@liq/sdk";
 import { useAccountId, useDepositMutation } from "@liq/react";
+import { formatUsd, wadToFixed } from "@liq/core";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,18 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { fmtUsd, wadToFixed } from "../../lib/format";
 import { useUsdcBalanceWad } from "./useUsdcBalance";
-
-function parseAmount(amount: string): bigint {
-  if (!amount) return 0n;
-  try {
-    return Margin.parse(amount);
-  } catch {
-    return 0n;
-  }
-}
 
 export function DepositDialog({
   open,
@@ -39,7 +31,7 @@ export function DepositDialog({
   // read resolves to 0n → no Max, no cap.
   const { data: balance } = useUsdcBalanceWad();
 
-  const amountWad = parseAmount(amount);
+  const amountWad = parseOrZero(Margin.parse, amount);
   const exceedsBalance = balance !== undefined && amountWad > balance;
   const invalid = exceedsBalance;
 
@@ -84,7 +76,7 @@ export function DepositDialog({
           <div className="mb-1 flex justify-between text-[11px] text-muted">
             <span>Wallet balance</span>
             <span className="text-text" data-testid="deposit-balance">
-              {fmtUsd(balance)}
+              {formatUsd(balance)}
             </span>
           </div>
         )}
