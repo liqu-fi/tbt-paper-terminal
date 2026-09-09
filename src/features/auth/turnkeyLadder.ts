@@ -1,7 +1,7 @@
 // src/features/auth/turnkeyLadder.ts
 import type { GasGrantOutcome } from "../wallet/gasGrant";
 import type { IdentityDoor } from "./identityDoor";
-import type { SessionStage } from "./sessionStage";
+import type { SessionStage } from "@liq/core";
 
 /**
  * Лестница личности: подписант → wagmi → газ. Один редьюсер, ни строчки React.

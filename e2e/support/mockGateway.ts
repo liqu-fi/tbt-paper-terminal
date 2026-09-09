@@ -17,6 +17,23 @@ import type {
   SessionKeyRecord,
 } from "./world";
 
+/**
+ * Токен шлюза в том виде, в каком его читает SDK: первый сегмент — base64url
+ * от `{address, exp}`, дальше подпись, которую клиент не проверяет.
+ *
+ * @remarks Раньше мок отдавал непрозрачную строку. Клиент разбирает токен на
+ * каждом кадре — `gatewayTokenBelongsTo` решает, вошли ли мы, а `tokenAddress`
+ * сверяет кошелёк токена с подключённым, — и на строке без адреса обе проверки
+ * молча отвечали «нет». Часть контура, ради которой они написаны (токен от
+ * ЧУЖОГО кошелька), при таком моке не проверялась вовсе.
+ */
+function gatewayToken(address: string, ttlMs = 24 * 60 * 60 * 1000): string {
+  const payload = Buffer.from(
+    JSON.stringify({ address, exp: Date.now() + ttlMs }),
+  ).toString("base64url");
+  return `${payload}.e2e-signature`;
+}
+
 function send(route: Route, body: unknown, status = 200): Promise<void> {
   return route.fulfill({
     status,
@@ -295,7 +312,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
         signature: string;
       };
       world.authVerifyRequests.push(payload);
-      await send(route, { token: "e2e-token", address: TEST_ADDRESS });
+      await send(route, { token: gatewayToken(TEST_ADDRESS), address: TEST_ADDRESS });
       return;
     }
 

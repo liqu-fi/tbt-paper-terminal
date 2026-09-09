@@ -2,6 +2,7 @@ import {
   useAccountQuery,
   useCreateAccountMutation,
   useGatewayAuthMutation,
+  useSessionStage,
 } from "@liq/react";
 import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
 import { type ReactNode, useEffect } from "react";
@@ -12,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { useIdentityDoor } from "./IdentityDoorProvider";
 import { SignInPanel } from "./SignInPanel";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
-import { useSessionStageLocal } from "./useSessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
@@ -55,7 +55,7 @@ function TurnkeyBootGate({ children }: { children: ReactNode }) {
 
 function SessionGateInner({ children }: { children: ReactNode }) {
   const { booting } = useIdentityDoor();
-  // Саму ступень вычисляет useSessionStageLocal(); здесь accountId остаётся
+  // Саму ступень вычисляет useSessionStage(); здесь accountId остаётся
   // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
   const { data: accountIds } = useAccountQuery();
   const accountId = accountIds?.[0];
@@ -92,7 +92,7 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     }
   }, [wrongChain, walletClientErrored, refetchWalletClient]);
 
-  const stage = useSessionStageLocal();
+  const stage = useSessionStage();
 
   // Пока идёт восстановление, wagmi отвечает `disconnected`, и без этой ветки
   // гейт показывал бы экран входа кадром на каждой перезагрузке. Раньше ту же

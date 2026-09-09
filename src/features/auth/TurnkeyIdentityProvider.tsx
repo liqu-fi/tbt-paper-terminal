@@ -2,6 +2,7 @@ import {
   AUTHED_QUERY_PREFIXES,
   AuthState,
   useGatewayStore,
+  useSessionStage,
   useTurnkey,
 } from "@liq/react";
 import {
@@ -28,7 +29,6 @@ import { useAccount, useConnect, useReconnect } from "wagmi";
 import { megaethTestnet } from "../../config/chain";
 import { env } from "../../config/env";
 import { useIdentityDoor } from "./IdentityDoorProvider";
-import { useSessionStageLocal } from "./useSessionStage";
 import {
   embeddedWalletView,
   heldAccountIsCurrent,
@@ -136,7 +136,7 @@ function machineReduce(machine: Machine, action: Action): Machine {
  */
 export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
   const { authState, session } = useTurnkey();
-  const stage = useSessionStageLocal();
+  const stage = useSessionStage();
   const { door } = useIdentityDoor();
   const wagmiAccount = useAccount();
   const token = useGatewayStore((s) => s.token);
