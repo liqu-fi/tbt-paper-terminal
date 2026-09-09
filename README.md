@@ -42,16 +42,15 @@ deposit → sign & submit orders → watch live updates**. Single-market, neutra
    ```
    Open the printed URL, connect your wallet, and follow the on-screen CTAs.
 
-> **CORS:** the SPA calls the gateway (REST + SSE) directly. If the gateway origin doesn't allow
-> your `localhost`, set `VITE_GATEWAY_PROXY=true` and point `env.gatewayUrl` at `/gateway` to use
-> the bundled Vite dev proxy.
+> **CORS:** the SPA calls the gateway (REST + SSE) directly, so the gateway must allow this
+> origin. There is no dev proxy — a gateway that refuses `localhost` has to be fixed on its side.
 
 ### SDK packaging note
 
-The SDK's compiled `dist/` imports bare `@liq/*` package specifiers. This repo resolves them via
-npm-alias entries in `package.json` (the `@liq/*` dependencies point at the published packages), so a
-plain `pnpm install` works straight after a clone. The clean fix is to rewrite those specifiers at
-SDK publish time; until then the aliases are required in every consumer.
+The `@liq/*` dependencies in `package.json` are npm aliases onto the published `@liqpro/liq-*`
+packages — the short specifier is what the app imports. Only the five packages the app imports
+directly are listed; the rest (`liq-onchain`, `liq-prices`, `liq-subgraph`) arrive transitively
+through `@liq/sdk` and `@liq/react`, which reference them by their full names.
 
 ## Trade lifecycle ↔ SDK calls
 

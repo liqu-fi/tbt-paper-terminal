@@ -3,7 +3,7 @@ import { AuthState, useTurnkey } from "@liq/react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useIdentityDoor } from "./IdentityDoorProvider";
+import { useDoorStore } from "./useDoorStore";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 
 /**
@@ -18,7 +18,7 @@ import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 export function TurnkeyLoginButton() {
   const { handleLogin, authState } = useTurnkey();
   const { embedded, retryResolve } = useTurnkeyIdentity();
-  const { setDoor } = useIdentityDoor();
+  const setDoor = useDoorStore((s) => s.setDoor);
   const [loginError, setLoginError] = useState<unknown>(null);
   const [stalled, setStalled] = useState(false);
 

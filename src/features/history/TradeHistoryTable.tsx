@@ -15,7 +15,7 @@ import {
   fmtTime,
   fmtUsd,
 } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 interface Row {
   trade: TradeRow;
@@ -113,9 +113,7 @@ export function TradeHistoryTable() {
     () =>
       (data?.rows ?? []).map((trade) => ({
         trade,
-        symbol:
-          markets.find((m) => m.id === trade.marketId)?.symbol ??
-          trade.marketId.toString(),
+        symbol: marketSymbol(markets, trade.marketId),
       })),
     [data, markets],
   );
@@ -126,7 +124,6 @@ export function TradeHistoryTable() {
       columns={columns}
       testid="trade-history-table"
       rowId={(r) => r.trade.id}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
       emptyText="No trades yet."
     />

@@ -19,7 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { DataTableToolbar, type ToolbarMarket } from "./DataTableToolbar";
+import { useSelectedMarket } from "@/features/market/useSelectedMarket";
+
+import { DataTableToolbar } from "./DataTableToolbar";
 import { ALL_MARKETS, features } from "./features";
 import { ToolbarSlotContext } from "./ToolbarSlotContext";
 
@@ -32,7 +34,6 @@ export interface DataTableProps<T extends RowData> {
   /** Корневой `data-testid`; из него же выводятся `-empty` и `-loading`. */
   testid: string;
   rowId: (row: T) => string;
-  markets: ToolbarMarket[];
   loading?: boolean;
   /** Сообщение вместо таблицы: пусто, ошибка, источник молчит. */
   notice?: { testid: string; text: string } | null;
@@ -58,7 +59,6 @@ export function DataTable<T extends RowData>({
   columns,
   testid,
   rowId,
-  markets,
   loading = false,
   notice = null,
   emptyText,
@@ -67,6 +67,10 @@ export function DataTable<T extends RowData>({
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const slot = useContext(ToolbarSlotContext);
+  // Список рынков для фильтра тулбара берётся здесь, а не приходит пропом: все
+  // семь таблиц передавали одно и то же выражение над одним и тем же
+  // контекстом, и седьмая копия расходилась бы с остальными молча.
+  const { markets } = useSelectedMarket();
 
   const table = useTable({
     features,
@@ -92,7 +96,7 @@ export function DataTable<T extends RowData>({
         canHide: c.getCanHide(),
         toggle: () => c.toggleVisibility(),
       }))}
-      markets={markets}
+      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       market={market}
       onMarketChange={(value) =>
         marketFilter?.setFilterValue(value === ALL_MARKETS ? undefined : value)

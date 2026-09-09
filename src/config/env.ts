@@ -69,14 +69,6 @@ export const env = {
   gatewayUrl: requireGatewayUrl(),
   rpcUrl: import.meta.env.VITE_RPC_URL ?? "https://carrot.megaeth.com/rpc",
   walletConnectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "",
-  /**
-   * Показывать ли отладочный оверлей состояния кошелька (левый нижний угол).
-   *
-   * @remarks Выключен по умолчанию: это `fixed`-слой поверх раскладки, и на
-   * ноутбучном экране он закрывает половину нижней таблицы. Интегратору,
-   * которому он нужен на onboarding'е, достаточно `VITE_DEBUG_WALLET=true`.
-   */
-  debugWallet: import.meta.env.VITE_DEBUG_WALLET === "true",
   turnkey,
   turnkeyConfigError: readTurnkeyConfigError(),
 };

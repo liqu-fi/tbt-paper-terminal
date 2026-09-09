@@ -15,7 +15,6 @@ import {
   fmtSignedUsd,
   fmtUsd,
 } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ClosePositionsDialog } from "./ClosePositionsDialog";
 import {
   PositionActionsContext,
@@ -210,7 +209,6 @@ function RowActions({ row }: { row: PositionRow }) {
 }
 
 export function PositionsTable() {
-  const { markets } = useSelectedMarket();
   const { rows, isLoading, isError, close, isClosing } = usePositionRows();
   const [target, setTarget] = useState<readonly PositionRow[]>(EMPTY_TARGET);
   const [editing, setEditing] = useState<PositionRow | null>(null);
@@ -258,7 +256,6 @@ export function PositionsTable() {
         columns={columns}
         testid="positions-table"
         rowId={(r) => r.position.marketId.toString()}
-        markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
         loading={isLoading}
         // Пустой ответ и провалившееся чтение — разные вещи: `useEnrichedPositions`
         // роняет запрос, когда ERC-7412 отревертил чтение по протухшему оракулу,

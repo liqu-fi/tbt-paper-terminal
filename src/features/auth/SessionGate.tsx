@@ -2,17 +2,18 @@ import {
   useAccountQuery,
   useCreateAccountMutation,
   useGatewayAuthMutation,
+  useSessionStage,
 } from "@liq/react";
 import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
 import { type ReactNode, useEffect } from "react";
-import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
+import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env, turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
-import { useIdentityDoor } from "./IdentityDoorProvider";
+import { useSessionBooting } from "./IdentityDoorProvider";
+import { useDoorStore } from "./useDoorStore";
 import { SignInPanel } from "./SignInPanel";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
-import { useSessionStageLocal } from "./useSessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
@@ -21,12 +22,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   // чтобы выбор компонента, который его зовёт, не менялся за время монтирования
   // (тот же приём в `SignInPanel`, `ConnectButton`).
   const inner = <SessionGateInner>{children}</SessionGateInner>;
-  return (
-    <>
-      {env.debugWallet && <WalletDebug />}
-      {turnkeyLoginEnabled ? <TurnkeyBootGate>{inner}</TurnkeyBootGate> : inner}
-    </>
-  );
+  return turnkeyLoginEnabled ? <TurnkeyBootGate>{inner}</TurnkeyBootGate> : inner;
 }
 
 /**
@@ -45,7 +41,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
  * оставалось открытым.
  */
 function TurnkeyBootGate({ children }: { children: ReactNode }) {
-  const { door } = useIdentityDoor();
+  const door = useDoorStore((s) => s.door);
   const { subOrgId, embedded } = useTurnkeyIdentity();
   const stillResolving = embedded.kind === "idle" || embedded.kind === "resolving";
   if (door === "turnkey" && subOrgId !== null && stillResolving) {
@@ -58,54 +54,9 @@ function TurnkeyBootGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/**
- * Integrator-facing diagnostic overlay: live wagmi wallet state (status, chain,
- * walletClient) so a misconfigured wallet/chain is visible at a glance during
- * onboarding.
- *
- * @remarks За флагом `VITE_DEBUG_WALLET`, по умолчанию выключен. Это `fixed`-слой
- * в левом нижнем углу: на 1024×768 он закрывал половину таблицы позиций, а
- * `pointer-events-none` спасает только от перехвата кликов, но не от того, что
- * данных под ним не видно. Кому оверлей нужен — включает флагом.
- */
-function WalletDebug() {
-  const account = useAccount();
-  const chainId = useChainId();
-  const wc = useWalletClient();
-  const rows: [string, string][] = [
-    ["account.status", account.status],
-    ["account.isConnected", String(account.isConnected)],
-    ["account.address", account.address ?? "—"],
-    ["account.chainId", String(account.chainId ?? "—")],
-    ["connector", account.connector?.name ?? "—"],
-    ["useChainId()", String(chainId)],
-    ["env.chainId", String(env.chainId)],
-    ["walletClient.data", wc.data ? "present" : "undefined"],
-    ["walletClient.account", wc.data?.account?.address ?? "—"],
-    ["walletClient.chain", String(wc.data?.chain?.id ?? "—")],
-    ["walletClient.status", wc.status],
-    ["walletClient.error", wc.error?.message ?? "—"],
-  ];
-  return (
-    <div
-      className="pointer-events-none fixed bottom-2 left-2 z-50 max-w-[92vw] rounded border border-border bg-surface-2 p-2 font-mono text-[11px] leading-tight text-muted"
-      data-testid="wallet-debug"
-    >
-      <div className="mb-1 font-semibold text-text">
-        wallet debug (temporary)
-      </div>
-      {rows.map(([k, v]) => (
-        <div key={k}>
-          {k}: <span className="text-text">{v}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function SessionGateInner({ children }: { children: ReactNode }) {
-  const { booting } = useIdentityDoor();
-  // Саму ступень вычисляет useSessionStageLocal(); здесь accountId остаётся
+  const booting = useSessionBooting();
+  // Саму ступень вычисляет useSessionStage(); здесь accountId остаётся
   // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
   const { data: accountIds } = useAccountQuery();
   const accountId = accountIds?.[0];
@@ -142,7 +93,7 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     }
   }, [wrongChain, walletClientErrored, refetchWalletClient]);
 
-  const stage = useSessionStageLocal();
+  const stage = useSessionStage();
 
   // Пока идёт восстановление, wagmi отвечает `disconnected`, и без этой ветки
   // гейт показывал бы экран входа кадром на каждой перезагрузке. Раньше ту же
@@ -219,24 +170,6 @@ function SessionGateInner({ children }: { children: ReactNode }) {
           {auth.isPending ? "Signing…" : "Sign In"}
         </Button>
         <ErrorLine error={auth.error} testid="signin-error" />
-        <pre
-          className="max-w-[92vw] overflow-auto whitespace-pre-wrap text-left font-mono text-[10px] text-muted"
-          data-testid="signin-debug"
-        >
-          {JSON.stringify(
-            {
-              accountId: accountId?.toString() ?? null,
-              status: auth.status,
-              isPending: auth.isPending,
-              isError: auth.isError,
-              failureCount: auth.failureCount,
-              error: auth.error?.message ?? null,
-            },
-            null,
-            2,
-          )}
-          {auth.error?.stack ? `\n\nSTACK:\n${auth.error.stack}` : ""}
-        </pre>
       </Centered>
     );
   }

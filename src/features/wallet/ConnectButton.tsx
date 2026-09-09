@@ -4,7 +4,7 @@ import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { turnkeyLoginEnabled } from "../../config/env";
 import { INJECTED_CONNECTOR_ID } from "../auth/identityDoor";
-import { useIdentityDoor } from "../auth/IdentityDoorProvider";
+import { useDoorStore } from "../auth/useDoorStore";
 
 function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -39,7 +39,7 @@ function AddressButton({
  */
 function PlainAddressButton({ address }: { address: string }) {
   const { disconnect } = useDisconnect();
-  const { forgetDoor } = useIdentityDoor();
+  const forgetDoor = useDoorStore((s) => s.forgetDoor);
   return (
     <AddressButton
       address={address}
@@ -67,7 +67,8 @@ function TurnkeyAwareAddressButton({ address }: { address: string }) {
   const { logout } = useTurnkey();
   const signOut = useLiqSignOut();
   const { disconnect } = useDisconnect();
-  const { door, forgetDoor } = useIdentityDoor();
+  const door = useDoorStore((s) => s.door);
+  const forgetDoor = useDoorStore((s) => s.forgetDoor);
   return (
     <AddressButton
       address={address}
@@ -83,7 +84,7 @@ function TurnkeyAwareAddressButton({ address }: { address: string }) {
 export function ConnectButton() {
   const { address, isConnected } = useAccount();
   const { connectAsync, connectors, isPending } = useConnect();
-  const { setDoor } = useIdentityDoor();
+  const setDoor = useDoorStore((s) => s.setDoor);
 
   if (isConnected && address) {
     // Ветка стоит на константе времени сборки: `useTurnkey()` бросает вне

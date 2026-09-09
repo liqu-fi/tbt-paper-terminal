@@ -14,7 +14,7 @@ import {
 } from "@liq/react";
 import { useCallback, useMemo } from "react";
 
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 export type EnrichedPosition = NonNullable<
   ReturnType<typeof useEnrichedPositions>["data"]
@@ -62,8 +62,7 @@ export function buildPositionRows<P extends { marketId: bigint }>(input: {
     const key = position.marketId.toString();
     return {
       position,
-      symbol:
-        input.markets.find((m) => m.id === position.marketId)?.symbol ?? key,
+      symbol: marketSymbol(input.markets, position.marketId),
       markPrice: input.prices?.[key]?.price,
       brackets: positionBrackets(position.marketId, input.conditional),
     };

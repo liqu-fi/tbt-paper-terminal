@@ -11,7 +11,6 @@ import {
   fmtTime,
   parseWadLoose,
 } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
 import { type OrderRow, useOpenOrderRows } from "./useOpenOrderRows";
 
 const helper = createColumnHelper<typeof features, OrderRow>();
@@ -104,7 +103,6 @@ const columns = helper.columns([
 ]);
 
 export function OpenOrdersTable() {
-  const { markets } = useSelectedMarket();
   const { rows, isLoading } = useOpenOrderRows();
 
   return (
@@ -113,7 +111,6 @@ export function OpenOrdersTable() {
       columns={columns}
       testid="orders-table"
       rowId={(r) => r.order.id}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
       emptyText="No open orders."
     />

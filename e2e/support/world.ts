@@ -10,7 +10,7 @@ import { parseUnits } from "viem";
 
 import { CHAIN_ID, MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
 
-export type OrderMode = "BOOK" | "ONCHAIN" | "RECENTLY_CHANGED";
+type OrderMode = "BOOK" | "ONCHAIN" | "RECENTLY_CHANGED";
 
 export interface PositionFixture {
   marketId: string;
@@ -22,7 +22,7 @@ export interface PositionFixture {
   positionSize: bigint;
 }
 
-export interface AccountFixture {
+interface AccountFixture {
   id: bigint;
   orderMode: OrderMode;
   /** getAvailableMargin (int256, 18-dec) */
@@ -54,7 +54,7 @@ export interface GatewayOrder {
   createdAt: string;
 }
 
-export interface TradeRow {
+interface TradeRow {
   id: string;
   timestamp: number;
   marketId: string;
@@ -69,7 +69,7 @@ export interface TradeRow {
 }
 
 /** Провод `GET /accounts/:id/position-history` — числа строками, как у шлюза. */
-export interface WirePositionEpisode {
+interface WirePositionEpisode {
   marketId: string;
   symbol: string | null;
   direction: "long" | "short";
@@ -89,7 +89,7 @@ export interface WirePositionEpisode {
 }
 
 /** Провод `GET /accounts/:id/settlement-ledger`. */
-export interface WireLedgerRow {
+interface WireLedgerRow {
   timestampMs: number;
   txHash: string;
   logIndex: number;
@@ -106,7 +106,7 @@ export interface WireLedgerRow {
   liquidationTouched: boolean;
 }
 
-export interface RecordedTx {
+interface RecordedTx {
   hash: string;
   to: string;
   data: string;
@@ -132,14 +132,14 @@ export interface SessionKeyRecord {
 }
 
 /** Динамическая часть строки `/markets/full`. */
-export interface WireMarketDynamic {
+interface WireMarketDynamic {
   openInterest: string | null;
   currentFundingRate: string | null;
   indexPrice: string | null;
 }
 
 /** Окно объёма за сутки, как его отдаёт шлюз. */
-export interface WireVolumeWindow {
+interface WireVolumeWindow {
   volumeUsd: string;
   volumeBase: string;
   trades: number;
@@ -304,7 +304,7 @@ export interface ReceiptLog {
   data: string;
 }
 
-export interface Hold {
+interface Hold {
   promise: Promise<void>;
   release: () => void;
 }
@@ -385,7 +385,7 @@ function defaultBook(price: bigint): MockWorld["orderbook"] {
   };
 }
 
-export interface ScenarioOptions {
+interface ScenarioOptions {
   accounts?: AccountFixture[];
   price?: bigint;
   markets?: Market[];
@@ -678,28 +678,6 @@ export function sseOrderUpdateFrame(orderId: string, status: string): string {
     type: "order_update",
     channel: `order:${orderId}`,
     data: { orderId, status },
-  };
-  return `data: ${JSON.stringify(event)}\n\n`;
-}
-
-/** A raw SSE frame carrying a CLOSED 1m candle bar on `candles:{id}:1m`. */
-export function sseCandleFrame(
-  marketId: string,
-  bar: {
-    bucketStartTs: number;
-    open: string;
-    high: string;
-    low: string;
-    close: string;
-    volume: string;
-    tradeCount: number;
-    lastTradePrice: string | null;
-  },
-): string {
-  const event = {
-    type: "candle",
-    channel: `candles:${marketId}:1m`,
-    data: bar,
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }
