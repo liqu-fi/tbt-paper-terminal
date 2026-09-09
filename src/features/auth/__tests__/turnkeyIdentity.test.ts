@@ -73,11 +73,6 @@ vi.mock("../../../config/env", () => ({
   },
 }));
 
-let door: "turnkey" | "injected" | null = "turnkey";
-vi.mock("../useDoorStore", () => ({
-  useDoorStore: (selector: (s: unknown) => unknown) => selector({ door }),
-}));
-
 const { TurnkeyIdentityProvider, useTurnkeyIdentity } = await import(
   "../TurnkeyIdentityProvider"
 );
@@ -151,7 +146,6 @@ beforeEach(() => {
   wagmi = { address: undefined, isConnected: false, isConnecting: false, isReconnecting: false };
   stage = "no-account";
   gatewayToken = null;
-  door = "turnkey";
   seen.value = null;
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -270,13 +264,6 @@ describe("подключение к wagmi", () => {
     await settle();
     expect(connect).toHaveBeenCalledTimes(2);
   });
-
-  it("за дверью расширения к TEE-коннектору не подключается", async () => {
-    door = "injected";
-    render();
-    await settle();
-    expect(connect).not.toHaveBeenCalled();
-  });
 });
 
 describe("долив газа", () => {
@@ -286,13 +273,6 @@ describe("долив газа", () => {
     render();
     await settle();
     expect(requestGasGrant).toHaveBeenCalledTimes(1);
-  });
-
-  it("не просится за дверью расширения", async () => {
-    door = "injected";
-    render();
-    await settle();
-    expect(requestGasGrant).not.toHaveBeenCalled();
   });
 
   it("не просится, когда аккаунт уже есть", async () => {

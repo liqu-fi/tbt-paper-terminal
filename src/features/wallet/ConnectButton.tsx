@@ -2,9 +2,7 @@ import { useLiqSignOut, useTurnkey } from "@liq/react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 import { Button } from "@/components/ui/button";
-import { turnkeyLoginEnabled } from "../../config/env";
-import { INJECTED_CONNECTOR_ID } from "../auth/identityDoor";
-import { useDoorStore } from "../auth/useDoorStore";
+import { e2eWallet, turnkeyLoginEnabled } from "../../config/env";
 
 function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -31,7 +29,7 @@ function AddressButton({
 }
 
 /**
- * Выход из сессии, открытой расширением.
+ * Выход из сессии e2e-кошелька.
  *
  * @remarks
  * Просто `disconnect()`: токен шлюза переживает отключение, поэтому
@@ -39,89 +37,61 @@ function AddressButton({
  */
 function PlainAddressButton({ address }: { address: string }) {
   const { disconnect } = useDisconnect();
-  const forgetDoor = useDoorStore((s) => s.forgetDoor);
-  return (
-    <AddressButton
-      address={address}
-      onSignOut={() => {
-        forgetDoor();
-        disconnect();
-      }}
-    />
-  );
+  return <AddressButton address={address} onSignOut={() => disconnect()} />;
 }
 
 /**
- * Выход в сборке, где есть дверь Turnkey. Асимметрия с `PlainAddressButton`
- * намеренная.
+ * Выход за дверью Turnkey. Асимметрия с `PlainAddressButton` намеренная.
  *
  * @remarks
  * Под Turnkey одного `disconnect()` мало: сессия Turnkey остаётся живой, мост
  * видит «аутентифицирован + живой провайдер + отключённый wagmi» и немедленно
  * возвращает пользователя внутрь — кнопка «выйти» не работала бы вовсе.
- * Поэтому там полный выход, и порядок внутри `useLiqSignOut` несущий: реестр
+ * Поэтому полный выход, и порядок внутри `useLiqSignOut` несущий: реестр
  * провайдеров пустеет первым, потому что `logout()` асинхронен и окно между
  * `disconnect()` и его разрешением — это и есть окно для такого возврата.
  */
-function TurnkeyAwareAddressButton({ address }: { address: string }) {
+function TurnkeyAddressButton({ address }: { address: string }) {
   const { logout } = useTurnkey();
   const signOut = useLiqSignOut();
-  const { disconnect } = useDisconnect();
-  const door = useDoorStore((s) => s.door);
-  const forgetDoor = useDoorStore((s) => s.forgetDoor);
   return (
-    <AddressButton
-      address={address}
-      onSignOut={() => {
-        forgetDoor();
-        if (door === "turnkey") signOut({ logout });
-        else disconnect();
-      }}
-    />
+    <AddressButton address={address} onSignOut={() => signOut({ logout })} />
   );
 }
 
-export function ConnectButton() {
-  const { address, isConnected } = useAccount();
-  const { connectAsync, connectors, isPending } = useConnect();
-  const setDoor = useDoorStore((s) => s.setDoor);
-
-  if (isConnected && address) {
-    // Ветка стоит на константе времени сборки: `useTurnkey()` бросает вне
-    // своего провайдера, поэтому выбор, способный поменяться на лету, нарушил бы
-    // правило хуков. `turnkeyLoginEnabled` истинно только вместе с непустым
-    // orgId, а значит обёртка Turnkey в этой сборке смонтирована.
-    return turnkeyLoginEnabled ? (
-      <TurnkeyAwareAddressButton address={address} />
-    ) : (
-      <PlainAddressButton address={address} />
-    );
-  }
-
-  // По id, а не по индексу: с появлением двери Turnkey в конфиге два
-  // коннектора, и `connectors[0]` подключал бы то, что раньше стоит в списке.
-  const connector = connectors.find((c) => c.id === INJECTED_CONNECTOR_ID);
+/** Кнопка входа e2e-кошелька: единственный коннектор сборки — `injected()`. */
+function E2eConnectButton() {
+  const { connect, connectors, isPending } = useConnect();
+  const connector = connectors[0];
   return (
     <Button
       disabled={isPending || !connector}
-      onClick={() => {
-        if (!connector) return;
-        // Промисом, а не колбэком `onSuccess`: экземпляр этой кнопки в гейте
-        // размонтируется ровно в момент успеха — `stage` уходит с `disconnected`, —
-        // а поштучные колбэки react-query вызываются только при живых
-        // подписчиках, и наблюдатель, снятый при размонтировании, обратно к
-        // летящей мутации не прикрепляется. Дверь тогда не запишется, и
-        // следующая загрузка не восстановит сессию.
-        void connectAsync({ connector })
-          .then(() => setDoor("injected"))
-          .catch(() => {
-            // Отменённый в расширении коннект — обычное дело, не ошибка
-            // приложения; дверь в этом случае просто не пишется.
-          });
-      }}
+      onClick={() => connector && connect({ connector })}
       data-testid="connect-wallet-button"
     >
       {isPending ? "Connecting…" : "Connect Wallet"}
     </Button>
   );
+}
+
+/**
+ * Адрес с выходом, пока подключены; до подключения — ничего: дверь Turnkey
+ * живёт в `SignInPanel`. Только под `VITE_E2E_WALLET` до подключения рисуется
+ * кнопка e2e-кошелька — hermetic e2e входит ею и из шапки, и из гейта.
+ */
+export function ConnectButton() {
+  const { address, isConnected } = useAccount();
+
+  if (isConnected && address) {
+    // Ветка стоит на константе времени сборки: `useTurnkey()` бросает вне
+    // своего провайдера, поэтому выбор, способный поменяться на лету, нарушил бы
+    // правило хуков. `turnkeyLoginEnabled` истинно только при полном конфиге, а
+    // значит обёртка Turnkey в этой сборке смонтирована.
+    return turnkeyLoginEnabled ? (
+      <TurnkeyAddressButton address={address} />
+    ) : (
+      <PlainAddressButton address={address} />
+    );
+  }
+  return e2eWallet ? <E2eConnectButton /> : null;
 }

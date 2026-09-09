@@ -10,8 +10,6 @@ import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env, turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
-import { useSessionBooting } from "./IdentityDoorProvider";
-import { useDoorStore } from "./useDoorStore";
 import { SignInPanel } from "./SignInPanel";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 
@@ -30,21 +28,16 @@ export function SessionGate({ children }: { children: ReactNode }) {
  * встроенный кошелёк ещё не разрешён.
  *
  * @remarks
- * `booting` в `IdentityDoorProvider` гаснет, как только `isAuthorized()`
- * коннектора Turnkey ответит — а он отвечает `false` немедленно, потому что
- * зовёт `getProvider()` по пустому в этот тик реестру провайдеров: лестнице
- * ещё только предстоит начать круг к auth-proxy и `resolve-signer`. Без этой
- * ступени `SessionGateInner` в этом окне рисует `session-disconnected` с
- * обеими живыми кнопками, и клик по Connect Wallet сажает пользователя под
- * EOA, пока в реестре ещё висит TEE-провайдер прошлой попытки — спека §2
- * обещает, что именно это окно закрывает `booting`, и для двери Turnkey оно
- * оставалось открытым.
+ * Штатное восстановление wagmi заканчивается мгновенно: `isAuthorized()`
+ * коннектора Turnkey зовёт `getProvider()` по пустому в этот тик реестру
+ * провайдеров, а лестнице ещё только предстоит круг к auth-proxy и
+ * `resolve-signer`. Без этой ступени `SessionGateInner` в этом окне рисовал бы
+ * экран входа поверх уже восстановленной сессии.
  */
 function TurnkeyBootGate({ children }: { children: ReactNode }) {
-  const door = useDoorStore((s) => s.door);
   const { subOrgId, embedded } = useTurnkeyIdentity();
   const stillResolving = embedded.kind === "idle" || embedded.kind === "resolving";
-  if (door === "turnkey" && subOrgId !== null && stillResolving) {
+  if (subOrgId !== null && stillResolving) {
     return (
       <Centered testid="session-loading">
         <p className="text-muted">Loading account…</p>
@@ -55,7 +48,6 @@ function TurnkeyBootGate({ children }: { children: ReactNode }) {
 }
 
 function SessionGateInner({ children }: { children: ReactNode }) {
-  const booting = useSessionBooting();
   // Саму ступень вычисляет useSessionStage(); здесь accountId остаётся
   // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
   const { data: accountIds } = useAccountQuery();
@@ -95,10 +87,10 @@ function SessionGateInner({ children }: { children: ReactNode }) {
 
   const stage = useSessionStage();
 
-  // Пока идёт восстановление, wagmi отвечает `disconnected`, и без этой ветки
-  // гейт показывал бы экран входа кадром на каждой перезагрузке. Раньше ту же
-  // роль играл `isReconnecting` внутри штатного восстановления wagmi.
-  if (booting) {
+  // Пока wagmi восстанавливает единственный коннектор (`reconnectOnMount`),
+  // `useSessionStage()` читает его как `disconnected`, и без этой ветки гейт
+  // показывал бы экран входа кадром на каждой перезагрузке.
+  if (account.isReconnecting || account.isConnecting) {
     return (
       <Centered testid="session-loading">
         <p className="text-muted">Loading account…</p>

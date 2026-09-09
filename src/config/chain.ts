@@ -3,7 +3,7 @@ import { defineChain } from "viem";
 import { createConfig, http, type Config } from "wagmi";
 import { injected } from "wagmi/connectors";
 
-import { env, turnkeyLoginEnabled } from "./env";
+import { e2eWallet, env } from "./env";
 
 export const megaethTestnet = defineChain({
   id: 6343,
@@ -24,10 +24,10 @@ export const megaethTestnet = defineChain({
 
 /**
  * @remarks
- * Две двери — два коннектора, и порядок в списке значения не имеет: и
- * `ConnectButton`, и восстановление сессии ищут коннектор ПО ID
- * (`reconnectPlan`), а не по индексу. Раньше кнопка брала `connectors[0]` и
- * работала лишь потому, что коннектор был ровно один.
+ * Ровно один коннектор на сборку: Turnkey в продукте, `injected()` только под
+ * `VITE_E2E_WALLET` (hermetic e2e ставит `window.ethereum` сам). Один коннектор
+ * — значит штатный `reconnectOnMount` wagmi восстанавливает ровно его, и
+ * помнить «какой дверью входили» незачем.
  *
  * `multiInjectedProviderDiscovery: false` — не оптимизация. По умолчанию wagmi
  * добавляет коннектор на КАЖДЫЙ кошелёк, объявившийся по EIP-6963 (MetaMask,
@@ -47,9 +47,7 @@ export const megaethTestnet = defineChain({
 export function getConfig(): Config {
   return createConfig({
     chains: [megaethTestnet],
-    connectors: turnkeyLoginEnabled
-      ? [injected(), turnkeyConnector()]
-      : [injected()],
+    connectors: e2eWallet ? [injected()] : [turnkeyConnector()],
     multiInjectedProviderDiscovery: false,
     transports: { [megaethTestnet.id]: http(env.rpcUrl) },
   });

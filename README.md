@@ -28,19 +28,18 @@ deposit → sign & submit orders → watch live updates**. Single-market, neutra
    # routes like /markets, so the /v1 prefix must be part of this URL).
    ```
 
-> **Вход через Turnkey (необязательно).** По умолчанию единственная дверь — расширение браузера.
-> Чтобы пустить пользователей без кошелька, задайте `VITE_TURNKEY_LOGIN=true` вместе с
-> `VITE_TURNKEY_ORG_ID` и `VITE_TURNKEY_AUTH_PROXY_CONFIG_ID` из дашборда Turnkey (раздел Wallet
-> Kit). Вход по коду на почту создаёт пользователю кошелёк в TEE; шлюз доливает ему газа на первую
-> транзакцию через `POST /auth/gas` — на деплое без этой ручки вход работает, но ETH придётся
-> прислать самому.
+> **Вход — только через Turnkey.** Задайте `VITE_TURNKEY_ORG_ID` и
+> `VITE_TURNKEY_AUTH_PROXY_CONFIG_ID` из дашборда Turnkey (раздел Wallet Kit) — без них экран
+> входа объясняет, чего не хватает. Вход по коду на почту или подписью внешнего кошелька создаёт
+> пользователю кошелёк в TEE; шлюз доливает ему газа на первую транзакцию через `POST /auth/gas` —
+> на деплое без этой ручки вход работает, но ETH придётся прислать самому.
 
 3. **Install & run:**
    ```bash
    pnpm install
    pnpm dev
    ```
-   Open the printed URL, connect your wallet, and follow the on-screen CTAs.
+   Open the printed URL, sign in with Turnkey, and follow the on-screen CTAs.
 
 > **CORS:** the SPA calls the gateway (REST + SSE) directly, so the gateway must allow this
 > origin. There is no dev proxy — a gateway that refuses `localhost` has to be fixed on its side.

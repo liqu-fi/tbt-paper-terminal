@@ -20,22 +20,27 @@ function requireGatewayUrl(): string {
 }
 
 /**
- * Конфигурация Turnkey. Два независимых флага на один конфиг:
+ * Кошелёк для hermetic e2e (`VITE_E2E_WALLET`): вместо Turnkey — `window.ethereum`,
+ * который ставит Playwright. Константа времени сборки, выставляется только
+ * конфигами Playwright; в продовой сборке ветка мёртвая и вырезается.
+ * Замокать сам Turnkey (auth-proxy, сессия, стампер в IndexedDB, подпись в
+ * api.turnkey.com) в браузере без сети негде — отсюда отдельная дверь для тестов.
  *
- * - `enabled` (`VITE_TURNKEY_SESSION`) — бэкенд **сессионных ключей**: он
- *   выбирает ИСТОЧНИК ключа (анклав против ключа в localStorage), а не наличие
- *   сессии. Выключен — SDK возвращает кошельковый менеджер, 1-click работает
- *   без анклава.
- * - `login` (`VITE_TURNKEY_LOGIN`) — **дверь входа**: модалка Turnkey и
- *   встроенный кошелёк в TEE как подписант.
- *
- * Разведены, потому что это разные решения: вход через Turnkey полезен и без
- * сессионных ключей, а сессионные ключи работали до появления входа. Один флаг
- * на двоих означал бы, что включить одно нельзя, не включив другое.
+ * Именно отдельный экспорт, а не поле `env`: `import.meta.env.*` подставляется
+ * при сборке, и голую константу минификатор сворачивает в `false` вместе с
+ * веткой, а чтение поля объекта — нет.
+ */
+export const e2eWallet = import.meta.env.VITE_E2E_WALLET === "true";
+
+/**
+ * Конфигурация Turnkey. Вход — только через Turnkey, поэтому org-id и
+ * auth-proxy-config-id обязательны; `enabled` (`VITE_TURNKEY_SESSION`) —
+ * отдельный флаг бэкенда **сессионных ключей**: он выбирает ИСТОЧНИК ключа
+ * (анклав против ключа в localStorage), а не наличие сессии. Выключен — SDK
+ * возвращает кошельковый менеджер, 1-click работает без анклава.
  */
 const turnkey = {
   enabled: import.meta.env.VITE_TURNKEY_SESSION === "true",
-  login: import.meta.env.VITE_TURNKEY_LOGIN === "true",
   orgId: import.meta.env.VITE_TURNKEY_ORG_ID ?? "",
   authProxyUrl:
     import.meta.env.VITE_TURNKEY_AUTH_PROXY_URL ??
@@ -44,7 +49,7 @@ const turnkey = {
 };
 
 /**
- * Чего не хватает включённой двери входа — или `null`, если всё на месте.
+ * Чего не хватает двери входа — или `null`, если всё на месте.
  *
  * @remarks Константа времени сборки, и это несущее свойство, а не деталь:
  * `useTurnkey()` бросает вне своего провайдера, поэтому компонент, который его
@@ -52,13 +57,13 @@ const turnkey = {
  * за время монтирования — правило хуков соблюдено в обеих ветках.
  */
 function readTurnkeyConfigError(): string | null {
-  if (!turnkey.login) return null;
+  if (e2eWallet) return null;
   const missing = [
     turnkey.orgId ? null : "VITE_TURNKEY_ORG_ID",
     turnkey.authProxyConfigId ? null : "VITE_TURNKEY_AUTH_PROXY_CONFIG_ID",
   ].filter((name): name is string => name !== null);
   if (missing.length === 0) return null;
-  return `VITE_TURNKEY_LOGIN=true, но не задано: ${missing.join(", ")}. Вход через Turnkey выключен.`;
+  return `Не задано: ${missing.join(", ")}. Вход через Turnkey — единственный, без них войти нельзя.`;
 }
 
 export const env = {
@@ -74,8 +79,8 @@ export const env = {
 };
 
 /**
- * Показывать ли дверь Turnkey. Одно имя вместо повторения условия в четырёх
- * местах: разъехавшиеся копии этого условия — это экран, на котором кнопка
- * входа есть, а провайдера под ней нет.
+ * Смонтирована ли дверь Turnkey (обёртка, личность, кнопка входа). Одно имя
+ * вместо повторения условия в пяти местах: разъехавшиеся копии этого условия —
+ * это экран, на котором кнопка входа есть, а провайдера под ней нет.
  */
-export const turnkeyLoginEnabled = env.turnkey.login && !env.turnkeyConfigError;
+export const turnkeyLoginEnabled = !e2eWallet && !env.turnkeyConfigError;

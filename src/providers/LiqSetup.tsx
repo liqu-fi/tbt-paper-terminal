@@ -73,11 +73,12 @@ export function LiqSetup({ children }: { children: ReactNode }) {
   const { enabled, orgId, authProxyUrl, authProxyConfigId } = env.turnkey;
   const { methods, methodOrder } = turnkeyAuthMethods();
   // Обёртка нужна и сессионным ключам, и двери входа — поднимаем её, если хоть
-  // одно из двух включено и конфиг на месте. Прежнее условие смотрело только на
-  // флаг сессионных ключей, то есть вход без них был бы невозможен.
+  // одно из двух включено и конфиг на месте. Личность за дверью Turnkey — только
+  // под самой дверью: в e2e с сессионными ключами Turnkey вход идёт кошельком
+  // Playwright, и провайдер личности молча пересадил бы его под TEE-кошелёк.
   const mounted = Boolean(orgId) && (enabled || turnkeyLoginEnabled);
 
-  const inner = mounted ? (
+  const inner = turnkeyLoginEnabled ? (
     <TurnkeyIdentityProvider>{children}</TurnkeyIdentityProvider>
   ) : (
     children

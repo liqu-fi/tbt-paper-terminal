@@ -3,7 +3,6 @@ import { AuthState, useTurnkey } from "@liq/react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useDoorStore } from "./useDoorStore";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 
 /**
@@ -18,7 +17,6 @@ import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 export function TurnkeyLoginButton() {
   const { handleLogin, authState } = useTurnkey();
   const { embedded, retryResolve } = useTurnkeyIdentity();
-  const setDoor = useDoorStore((s) => s.setDoor);
   const [loginError, setLoginError] = useState<unknown>(null);
   const [stalled, setStalled] = useState(false);
 
@@ -50,9 +48,6 @@ export function TurnkeyLoginButton() {
         disabled={awaiting}
         onClick={() => {
           setLoginError(null);
-          // Дверь пишется до модалки: перезагрузка посреди входа должна
-          // восстанавливать Turnkey, а не подхватывать расширение.
-          setDoor("turnkey");
           handleLogin().catch((error: unknown) => setLoginError(error));
         }}
         data-testid="turnkey-login-button"

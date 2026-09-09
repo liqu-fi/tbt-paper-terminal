@@ -34,6 +34,9 @@ export default defineConfig({
           `VITE_DEPLOY_ENV=${liveEnv.deployEnv}`,
           `VITE_CHAIN_ID=${liveEnv.chainId}`,
           "VITE_WALLETCONNECT_PROJECT_ID=",
+          // The live tier signs with the mnemonic-derived injected wallet, not
+          // the Turnkey door (the product's only one) — see src/config/env.ts.
+          "VITE_E2E_WALLET=true",
           // Turnkey stays OFF unless explicitly configured: with the flag on but
           // the org/proxy ids missing the SDK yields a null manager, and the
           // 1-click pill silently disappears for the whole live run.
