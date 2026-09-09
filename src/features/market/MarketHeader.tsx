@@ -41,7 +41,7 @@ export function MarketHeader() {
   return (
     <TooltipProvider>
       <div
-        className="flex shrink-0 items-center gap-6 border-b border-border px-3 py-1.5"
+        className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-3 py-1.5 md:flex-nowrap md:gap-6"
         data-testid="market-header"
       >
         <MarketSearch />

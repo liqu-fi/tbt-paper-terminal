@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/resizable";
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
+import { useMediaQuery } from "../../lib/useMediaQuery";
+
 import { AccountPanel } from "../account/AccountPanel";
 import { ChartFrame } from "../chart/ChartFrame";
 import { MarketHeader } from "../market/MarketHeader";
@@ -46,6 +48,8 @@ const TICKET_MAX_PX = "480px";
 const LEFT_MIN_PX = "580px";
 /** Одна рамка на всё — шапку рынка и сетку; панели внутри без своих (см. `Card`). */
 const FRAME = "overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface";
+/** Ниже — одна прокручиваемая колонка вместо сетки с ручками. */
+const MOBILE = "(max-width: 767px)";
 
 /**
  * Раскладка: слева чарт со стаканом над историями, справа — колонка тикета и
@@ -54,9 +58,44 @@ const FRAME = "overflow-hidden rounded-[var(--radius-card)] border border-border
  */
 export function Terminal() {
   const { marketId } = useSelectedMarket();
+  const mobile = useMediaQuery(MOBILE);
   const chartCollapsed = useTerminalUiStore((s) => s.chartCollapsed);
   const bottomFullscreen = useTerminalUiStore((s) => s.bottomFullscreen);
   const toggleChart = useTerminalUiStore((s) => s.toggleChart);
+
+  // Телефон: те же панели стопкой, прокрутка всей колонки. Чарту и стакану
+  // высота задана явно — оба меряют себя от родителя (`autoSize`,
+  // `useBookSlots`) и в потоке без неё схлопнулись бы в ноль. Свёртка чарта и
+  // фуллскрин нижней панели здесь не имеют смысла и не рисуются.
+  if (mobile) {
+    return (
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[var(--radius-card)] border border-border bg-surface"
+        data-testid="terminal-root"
+      >
+        <MarketHeader />
+        <Card
+          className="flex h-72 shrink-0 flex-col overflow-hidden p-2"
+          data-testid="chart-panel"
+        >
+          <ChartFrame marketId={marketId} />
+        </Card>
+        <div className="shrink-0 border-t border-border">
+          <TradeForm />
+        </div>
+        <AccountPanel />
+        <div className="h-80 shrink-0 border-t border-border">
+          <OrderBookPanel />
+        </div>
+        <div
+          className="flex h-96 shrink-0 flex-col border-t border-border"
+          data-testid="bottom-panel"
+        >
+          <UserInfoTabs fullscreenToggle={false} />
+        </div>
+      </div>
+    );
+  }
 
   const chartToggle = (
     <button

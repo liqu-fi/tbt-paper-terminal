@@ -16,7 +16,12 @@ import { PositionsTable } from "../positions/PositionsTable";
 import { USER_TABS, type UserTabSlug } from "./tabs";
 import { useLiveOrders } from "./useLiveOrders";
 
-export function UserInfoTabs() {
+export function UserInfoTabs({
+  fullscreenToggle = true,
+}: {
+  /** `false` — там, где фуллскрин нижней панели не существует (телефон). */
+  fullscreenToggle?: boolean;
+} = {}) {
   useLiveOrders(); // SSE subscription side-effect
   const [tab, setTab] = useState<UserTabSlug>("positions");
   // Элемент, а не ref: портал должен перерисоваться, когда узел появится, а
@@ -79,7 +84,7 @@ export function UserInfoTabs() {
             он принадлежит панели и обязан быть виден на любой вкладке,
             в том числе на той, чья таблица ещё не смонтирована. */}
         <div ref={setSlot} className="flex shrink-0 items-center gap-2" />
-        {fullscreenButton}
+        {fullscreenToggle && fullscreenButton}
       </div>
       <ToolbarSlotContext.Provider value={slot}>
         {tab === "positions" && <PositionsTable />}
