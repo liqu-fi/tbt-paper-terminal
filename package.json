@@ -26,7 +26,6 @@
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-table": "^9.2.4",
     "@turnkey/react-wallet-kit": "^2.4.1",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "lightweight-charts": "^5.2.0",
