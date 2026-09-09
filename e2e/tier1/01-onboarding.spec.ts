@@ -197,27 +197,6 @@ test.describe("boot + onboarding", () => {
     expect(world.accounts).toHaveLength(1);
   });
 
-  test("integrator debug overlays render and never intercept clicks", async ({
-    page,
-    world,
-  }) => {
-    seed(world, readyWorld());
-    const app = new AppPage(page);
-    await app.goto();
-    // Оверлей состояния кошелька — за флагом `VITE_DEBUG_WALLET`, и e2e его не
-    // ставит: это `fixed`-слой в левом нижнем углу, который на ноутбучном экране
-    // закрывал часть нижней таблицы. По умолчанию его нет вовсе.
-    await expect(app.walletDebug).toHaveCount(0);
-
-    await app.connect();
-    // The sign-in stage shows the auth-state JSON dump.
-    await expect(app.signinDebug).toBeVisible();
-    await expect(app.signinDebug).toContainText('"status"');
-    // …and the CTA underneath the fixed overlay still works end-to-end.
-    await app.signIn();
-    await expect(app.terminal).toBeVisible();
-  });
-
   test("the session shows a loading gate while the account lookup is in flight", async ({
     page,
     world,

@@ -24,8 +24,6 @@ export class AppPage {
   readonly needsSigninGate: Locator;
   readonly signinButton: Locator;
   readonly signinError: Locator;
-  readonly walletDebug: Locator;
-  readonly signinDebug: Locator;
   readonly terminal: Locator;
   readonly wrongChainGate: Locator;
   readonly switchChainButton: Locator;
@@ -45,8 +43,6 @@ export class AppPage {
     this.needsSigninGate = page.getByTestId("session-needs-signin");
     this.signinButton = page.getByTestId("signin-button");
     this.signinError = page.getByTestId("signin-error");
-    this.walletDebug = page.getByTestId("wallet-debug");
-    this.signinDebug = page.getByTestId("signin-debug");
     this.terminal = page.getByTestId("terminal-root");
     this.wrongChainGate = page.getByTestId("session-wrong-chain");
     this.switchChainButton = page.getByTestId("switch-chain-button");
