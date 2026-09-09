@@ -10,8 +10,11 @@ connect → create-account → SIWE → trade lifecycle).
 
 Fully self-contained: no secrets, no live backend, deterministic, runs in CI.
 The Playwright config (`playwright.config.ts`) launches the dev server with fixed
-fake origins (`gateway.e2e.local`, `rpc.e2e.local`) and every request is
-intercepted in-process:
+fake origins (`gateway.e2e.local`, `rpc.e2e.local`) and `VITE_E2E_WALLET=true` —
+the product's only login is Turnkey, which cannot be mocked hermetically, so
+that build-time constant swaps the single wagmi connector for `injected()` and
+shows a plain Connect button (`src/config/env.ts`). Every request is intercepted
+in-process:
 
 - **`support/injectedWallet.ts`** — an EIP-1193 `window.ethereum` that signs with
   canned signatures and turns sends into world mutations + receipts.

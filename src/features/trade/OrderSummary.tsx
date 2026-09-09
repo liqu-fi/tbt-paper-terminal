@@ -2,14 +2,13 @@ import { fmtPrice, fmtQty, fmtUsd } from "../../lib/format";
 import type { TicketSummary } from "./ticketSummary";
 
 /**
- * Сводка тикета парой значений — как в макете.
+ * Сводка тикета.
  *
- * @remarks Первые три строки у обеих сторон совпадают по величине и различаются
- * только цветом: это один расчёт, показанный под оба исхода. `Liq. Price` —
- * единственная строка, где числа действительно разные, и потому единственная
- * без зелёно-красной подсветки.
+ * @remarks Количество, объём и стоимость у обеих сторон одинаковы — это один
+ * расчёт, и печатается он один раз. Пара «зелёное / красное» осталась только
+ * у `Liq. Price`: единственной строки, где лонг и шорт дают разные числа.
  *
- * Блок показан всегда, а не от непустого размера: сторона теперь выбирается
+ * Блок показан всегда, а не от непустого размера: сторона выбирается
  * нажатием кнопки, и сводка — единственное место, где видно, чем два нажатия
  * различаются. Появляясь только с размером, она прятала бы это различие ровно
  * тогда, когда его и разглядывают.
@@ -30,42 +29,22 @@ export function OrderSummary({
       className="flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-surface-2 p-1.5 text-[10px]"
       data-testid="order-summary"
     >
-      <Paired
-        label="Order qty."
-        value={fmtQty(summary.qty)}
-        unit={baseSymbol}
-        testid="order-qty"
-      />
-      <Paired
-        label="Order value"
-        value={fmtUsd(summary.value)}
-        unit={quoteSymbol}
-        testid="order-value"
-      />
-      <Paired
-        label="Cost"
-        value={fmtUsd(summary.cost)}
-        unit={quoteSymbol}
-        testid="order-cost"
-      />
+      <Row label="Order qty." value={fmtQty(summary.qty)} unit={baseSymbol} testid="order-qty" />
+      <Row label="Order value" value={fmtUsd(summary.value)} unit={quoteSymbol} testid="order-value" />
+      <Row label="Cost" value={fmtUsd(summary.cost)} unit={quoteSymbol} testid="order-cost" />
       <div className="flex justify-between">
         <span className="text-muted">Liq. Price</span>
-        <span className="text-text" data-testid="order-liq-price">
-          {liq(summary.long.liqPrice)} / {liq(summary.short.liqPrice)}
+        <span data-testid="order-liq-price">
+          <span className="text-long">{liq(summary.long.liqPrice)}</span>
+          <span className="text-muted"> / </span>
+          <span className="text-short">{liq(summary.short.liqPrice)}</span>
         </span>
       </div>
     </div>
   );
 }
 
-/**
- * Строка, где обе стороны дают одно число.
- *
- * @remarks Число печатается дважды намеренно: пара «зелёное / красное» —
- * это и есть язык макета, и одиночное значение читалось бы как относящееся
- * к какой-то одной стороне.
- */
-function Paired({
+function Row({
   label,
   value,
   unit,
@@ -80,9 +59,7 @@ function Paired({
     <div className="flex justify-between">
       <span className="text-muted">{label}</span>
       <span data-testid={testid}>
-        <span className="text-long">{value}</span>
-        <span className="text-muted"> / </span>
-        <span className="text-short">{value}</span>
+        <span className="text-text">{value}</span>
         <span className="text-muted"> {unit}</span>
       </span>
     </div>

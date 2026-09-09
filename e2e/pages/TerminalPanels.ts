@@ -79,8 +79,6 @@ export class TradePanel {
   readonly sizePctSlider: Locator;
   readonly sizePctValue: Locator;
   readonly leverageSelect: Locator;
-  readonly ticketAvailable: Locator;
-  readonly ticketDepositButton: Locator;
   readonly leverageValue: Locator;
   readonly limitPriceInput: Locator;
   readonly triggerPriceInput: Locator;
@@ -113,8 +111,6 @@ export class TradePanel {
     this.sizePctSlider = page.getByTestId("size-pct-slider");
     this.sizePctValue = page.getByTestId("size-pct-value");
     this.leverageSelect = page.getByTestId("leverage-select");
-    this.ticketAvailable = page.getByTestId("ticket-available");
-    this.ticketDepositButton = page.getByTestId("ticket-deposit-button");
     this.leverageValue = page.getByTestId("leverage-value");
     this.limitPriceInput = page.getByTestId("limit-price-input");
     this.triggerPriceInput = page.getByTestId("trigger-price-input");
@@ -194,10 +190,6 @@ export class TradePanel {
   async setLeverage(value: number): Promise<void> {
     await this.leverageSelect.click();
     await this.page.getByTestId(`leverage-option-${value}`).click();
-  }
-
-  openDeposit(): Promise<void> {
-    return this.ticketDepositButton.click();
   }
 
   /**
@@ -464,26 +456,6 @@ export class AccountPanelPage {
   }
 }
 
-export class MarketTabsPanel {
-  constructor(private readonly page: Page) {}
-
-  get root(): Locator {
-    return this.page.getByTestId("market-tabs");
-  }
-  tab(id: string): Locator {
-    return this.page.getByTestId(`market-tab-${id}`);
-  }
-  close(id: string): Locator {
-    return this.page.getByTestId(`market-tab-close-${id}`);
-  }
-  get addButton(): Locator {
-    return this.page.getByTestId("market-tabs-add");
-  }
-  unit(kind: "pct" | "usd"): Locator {
-    return this.page.getByTestId(`change-unit-${kind}`);
-  }
-}
-
 export class ChartFramePage {
   constructor(private readonly page: Page) {}
 
@@ -492,9 +464,6 @@ export class ChartFramePage {
   }
   interval(iv: string): Locator {
     return this.page.getByTestId(`chart-interval-${iv}`);
-  }
-  range(key: string): Locator {
-    return this.page.getByTestId(`chart-range-${key}`);
   }
   scale(name: "percent" | "log" | "auto"): Locator {
     return this.page.getByTestId(`chart-scale-${name}`);

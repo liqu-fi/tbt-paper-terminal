@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { DASH, fmtPrice, fmtUsd, toNum } from "../../lib/format";
 import { DepositDialog } from "../account/DepositDialog";
+import { FaucetDialog } from "../account/FaucetDialog";
 import { WithdrawDialog } from "../account/WithdrawDialog";
 import { MarketSearch } from "./MarketSearch";
 import { MarketStat } from "./MarketStat";
@@ -23,6 +24,7 @@ export function MarketHeader() {
   const { rows } = useMarketRows();
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [faucetOpen, setFaucetOpen] = useState(false);
 
   const info =
     marketId !== undefined ? prices?.[marketId.toString()] : undefined;
@@ -38,7 +40,10 @@ export function MarketHeader() {
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-6" data-testid="market-header">
+      <div
+        className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-3 py-1.5 md:flex-nowrap md:gap-6"
+        data-testid="market-header"
+      >
         <MarketSearch />
         <div className="flex flex-col">
           <span
@@ -62,13 +67,6 @@ export function MarketHeader() {
 
         <MarketStat label="Mark Price" testid="stat-mark-price">
           {info ? fmtPrice(info.price) : DASH}
-        </MarketStat>
-        <MarketStat
-          label="Spot Price"
-          testid="stat-spot-price"
-          note="Спотового рынка у контура нет, а индексная цена — тот же фид Pyth, что и Mark. Показать одно число под двумя подписями значило бы заявить два измерения."
-        >
-          {DASH}
         </MarketStat>
         <MarketStat
           label="Funding Rate"
@@ -117,6 +115,14 @@ export function MarketHeader() {
         >
           Withdraw
         </button>
+        <button
+          type="button"
+          className="text-[11px] text-muted"
+          onClick={() => setFaucetOpen(true)}
+          data-testid="open-faucet-button"
+        >
+          Faucet
+        </button>
         <DepositDialog
           open={depositOpen}
           onClose={() => setDepositOpen(false)}
@@ -125,6 +131,7 @@ export function MarketHeader() {
           open={withdrawOpen}
           onClose={() => setWithdrawOpen(false)}
         />
+        <FaucetDialog open={faucetOpen} onClose={() => setFaucetOpen(false)} />
       </div>
     </TooltipProvider>
   );

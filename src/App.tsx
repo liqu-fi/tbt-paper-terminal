@@ -1,7 +1,6 @@
 import { SessionGate } from "./features/auth/SessionGate";
 import { ConnectButton } from "./features/wallet/ConnectButton";
 import { MarketProvider } from "./features/market/MarketContext";
-import { SessionToolbar } from "./features/session-keys/SessionToolbar";
 import { Terminal } from "./features/terminal/Terminal";
 
 /**
@@ -24,7 +23,6 @@ export default function App() {
             ◢ terminal
           </span>
           <div className="flex-1" />
-          <SessionToolbar />
           <ConnectButton />
         </header>
         <main className="flex min-h-0 flex-1 flex-col p-2">

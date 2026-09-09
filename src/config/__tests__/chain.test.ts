@@ -12,19 +12,17 @@ async function connectorIds(): Promise<string[]> {
 }
 
 describe("коннекторы wagmi", () => {
-  it("без флага входа — только injected", async () => {
+  it("в продукте — только Turnkey", async () => {
     vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
+    vi.stubEnv("VITE_E2E_WALLET", "");
+    vi.resetModules();
+    expect(await connectorIds()).toEqual([TURNKEY_CONNECTOR_ID]);
+  });
+
+  it("под e2e-кошельком — только injected", async () => {
+    vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
+    vi.stubEnv("VITE_E2E_WALLET", "true");
     vi.resetModules();
     expect(await connectorIds()).toEqual(["injected"]);
   });
-
-  it("с флагом входа — injected первым, Turnkey вторым", async () => {
-    vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
-    vi.stubEnv("VITE_TURNKEY_LOGIN", "true");
-    vi.stubEnv("VITE_TURNKEY_ORG_ID", "org-1");
-    vi.stubEnv("VITE_TURNKEY_AUTH_PROXY_CONFIG_ID", "cfg-1");
-    vi.resetModules();
-    expect(await connectorIds()).toEqual(["injected", TURNKEY_CONNECTOR_ID]);
-  });
-
 });

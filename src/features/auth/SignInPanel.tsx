@@ -3,12 +3,13 @@ import { ConnectButton } from "../wallet/ConnectButton";
 import { TurnkeyLoginButton } from "./TurnkeyLoginButton";
 
 /**
- * Экран входа: две двери в одну и ту же сессию.
+ * Экран входа: единственная дверь — Turnkey.
  *
  * @remarks
- * Turnkey даёт встроенный кошелёк в TEE и не требует расширения; `injected`
- * оставлен как есть. Обе приводят в один и тот же `SessionGate` — дальше
- * терминал не различает, чем подписывают.
+ * Turnkey даёт встроенный кошелёк в TEE и не требует расширения; подпись внешним
+ * кошельком — один из способов доказать личность внутри его модалки, а не
+ * отдельная дверь. `ConnectButton` здесь рисует что-то только под
+ * `VITE_E2E_WALLET` — кошелёк Playwright для hermetic e2e.
  */
 export function SignInPanel() {
   return (

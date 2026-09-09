@@ -8,9 +8,9 @@ import { numberToHex } from "viem";
 
 import {
   handleEthCall,
-  MODIFY_COLLATERAL_SELECTOR,
   TOKEN_OF_OWNER_SELECTOR,
   GET_ACCOUNT_FULL_POSITION_INFO_SELECTOR,
+  withdrawsCollateral,
 } from "./chain";
 import type { MockWorld } from "./world";
 
@@ -27,13 +27,14 @@ class RpcRevert extends Error {}
 
 function buildReceipt(world: MockWorld, hash: string) {
   const tx = world.sentTxs.find((t) => t.hash === hash);
-  // collateralReverts flags a reverted receipt only for a *direct*
-  // modifyCollateral tx — i.e. the withdraw path, which the SDK surfaces as a
-  // withdraw-error. The deposit path wraps modifyCollateral in an aggregate3
-  // forwarder call, so its `kind` isn't this selector and the receipt stays
-  // successful; the SDK never raises a deposit-error (monorepo#434).
+  // collateralReverts flags a reverted receipt only for a tx that WITHDRAWS
+  // collateral — a direct modifyCollateral with a negative delta, or the
+  // forwarder aggregate3 batch the withdraw dialog sends (withdraw + unwrap).
+  // The deposit batch also carries modifyCollateral, but with a positive
+  // delta, so its receipt stays successful; the SDK never raises a
+  // deposit-error (monorepo#434).
   const reverted =
-    !!world.faults.collateralReverts && tx?.kind === MODIFY_COLLATERAL_SELECTOR;
+    !!world.faults.collateralReverts && !!tx && withdrawsCollateral(tx.data);
   const logs = (world.receipts[hash] ?? []).map((log, i) => ({
     ...log,
     blockHash: ZERO_HASH,

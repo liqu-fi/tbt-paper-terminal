@@ -73,7 +73,7 @@ export function DepositDialog({
       <DialogContent
         data-testid="deposit-dialog"
         overlayTestId="dialog-overlay"
-        className="w-[320px]"
+        className="w-[min(320px,calc(100vw-2rem))]"
       >
         <DialogHeader className="mb-3">
           <DialogTitle className="text-sm font-semibold">

@@ -20,6 +20,9 @@ const E2E_ENV = [
   "VITE_DEPLOY_ENV=staging",
   "VITE_CHAIN_ID=6343",
   "VITE_WALLETCONNECT_PROJECT_ID=",
+  // Единственная дверь продукта — Turnkey; hermetic-тесты входят кошельком,
+  // который ставит e2e/support/injectedWallet.ts (см. src/config/env.ts).
+  "VITE_E2E_WALLET=true",
 ].join(" ");
 
 export default defineConfig({

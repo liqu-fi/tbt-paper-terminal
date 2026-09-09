@@ -15,9 +15,10 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { sanitizeDecimal } from "../../lib/decimal";
 import { useSelectedMarket } from "../market/useSelectedMarket";
-import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
 import { ExecutionFlags } from "./ExecutionFlags";
 import { OrderPriceField } from "./OrderPriceField";
@@ -31,7 +32,7 @@ import { useBookMid } from "./useBookMid";
 import { useMarkPrice } from "./useMarkPrice";
 import { useOrderSizing } from "./useOrderSizing";
 
-const TABS = ["Market", "Limit", "Stop", "Take Profit"] as const;
+const TABS = ["Market", "Limit"] as const;
 type Tab = (typeof TABS)[number];
 
 const SLIPPAGE_BPS = Bps(50n); // 0.5%
@@ -66,8 +67,6 @@ export function TradeForm() {
 
   const [tab, setTab] = useState<Tab>("Market");
   const [limitPrice, setLimitPrice] = useState("");
-  const [triggerPrice, setTriggerPrice] = useState("");
-  const [triggerAbove, setTriggerAbove] = useState(true);
   const [tpslOn, setTpslOn] = useState(false);
   const [postOnly, setPostOnly] = useState(false);
   const [reduceOnly, setReduceOnly] = useState(false);
@@ -106,10 +105,9 @@ export function TradeForm() {
 
   // The active tab's price field, parsed (0n = blank/unparseable).
   function parsedTabPrice(): bigint {
-    const raw = tab === "Limit" ? limitPrice : triggerPrice;
     if (tab === "Market") return markPrice;
     try {
-      return Price.parse(raw);
+      return Price.parse(limitPrice);
     } catch {
       return 0n;
     }
@@ -225,21 +223,6 @@ export function TradeForm() {
         },
         { onSuccess },
       );
-    } else {
-      submitOrder.mutate(
-        {
-          kind: "conditional",
-          accountId,
-          marketId,
-          sizeDelta,
-          side,
-          orderType: tab === "Stop" ? "STOP_MARKET" : "TAKE_PROFIT_MARKET",
-          triggerPrice: price,
-          triggerAbove,
-          reduceOnly,
-        },
-        { onSuccess },
-      );
     }
   }
 
@@ -255,30 +238,32 @@ export function TradeForm() {
      * было видно вообще — самое важное действие экрана пряталось ниже сгиба.
      */
     <div
-      className="flex h-full min-h-0 w-full flex-col rounded-[var(--radius-card)] border border-border bg-surface"
+      className="flex h-full min-h-0 w-full flex-col bg-surface"
       data-testid="trade-form"
     >
       <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-2.5">
-        <TicketHeader
-          leverage={sizing.leverage}
-          maxLeverage={sizing.maxLeverage}
-          onLeverage={sizing.setLeverage}
-          available={margins ? margins.available : null}
-        />
-
-        <div className="flex gap-1 text-[11px]">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`flex-1 rounded-[var(--radius-sm)] py-1 ${tab === t ? "bg-surface-2 text-text" : "text-muted"}`}
-              data-testid={`trade-tab-${tabSlug(t)}`}
-              aria-pressed={tab === t}
-            >
-              {t}
-            </button>
-          ))}
+        {/* Табы и плечо в одной строке: отдельная строка под одну пилюлю
+            стоила тикету ~36px высоты. Табы — тот же `Tabs`, что у
+            Order Book|Trades: один сегментный переключатель на весь экран. */}
+        <div className="flex items-center gap-2">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+            <TabsList>
+              {TABS.map((t) => (
+                <TabsTrigger
+                  key={t}
+                  value={t}
+                  data-testid={`trade-tab-${tabSlug(t)}`}
+                >
+                  {t}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <TicketHeader
+            leverage={sizing.leverage}
+            maxLeverage={sizing.maxLeverage}
+            onLeverage={sizing.setLeverage}
+          />
         </div>
 
         {tab === "Limit" && (
@@ -313,15 +298,6 @@ export function TradeForm() {
           onPct={sizing.setPct}
           disabled={insufficientMargin || markPrice === 0n}
         />
-
-        {(tab === "Stop" || tab === "Take Profit") && (
-          <ConditionalFields
-            triggerPrice={triggerPrice}
-            setTriggerPrice={setTriggerPrice}
-            triggerAbove={triggerAbove}
-            setTriggerAbove={setTriggerAbove}
-          />
-        )}
 
         <ExecutionFlags
           postOnly={postOnly}
@@ -394,8 +370,6 @@ export function TradeForm() {
 const TAB_SLUG: Record<Tab, string> = {
   Market: "market",
   Limit: "limit",
-  Stop: "stop",
-  "Take Profit": "take-profit",
 };
 
 function tabSlug(tab: Tab): string {

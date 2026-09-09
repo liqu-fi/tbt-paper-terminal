@@ -28,7 +28,6 @@ import { megaethTestnet } from "../../config/chain";
 import { env } from "../../config/env";
 import { requestGasGrant } from "../wallet/gasGrant";
 import { identityResetReason } from "./identityReset";
-import { useDoorStore } from "./useDoorStore";
 
 /** Куда дошло разрешение встроенного кошелька — для тех, кто это показывает. */
 export type EmbeddedWalletState =
@@ -88,7 +87,6 @@ export function useTurnkeyIdentity(): TurnkeyIdentityValue {
 export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
   const { authState, session } = useTurnkey();
   const stage = useSessionStage();
-  const door = useDoorStore((s) => s.door);
   const wagmiAccount = useAccount();
   const token = useGatewayStore((s) => s.token);
   const queryClient = useQueryClient();
@@ -162,10 +160,9 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
     );
   }, [authState, account]);
 
-  // Шаг 3. Отдаём подписанта в wagmi. Только за дверью `turnkey`: сессионные
-  // ключи (`VITE_TURNKEY_SESSION`) могут разрешать встроенный кошелёк и тому,
-  // кто вошёл расширением, и без этой проверки такой пользователь оказался бы
-  // молча переключён под TEE-кошелёк, о существовании которого не знает.
+  // Шаг 3. Отдаём подписанта в wagmi. Провайдер смонтирован только за дверью
+  // Turnkey (`LiqSetup`), поэтому пересадить под TEE-кошелёк того, кто вошёл
+  // иначе, отсюда нельзя.
   useEffect(() => {
     // Живое подключение снимает защёлку: соединение, которое получилось и потом
     // отвалилось, заслуживает новой попытки, а неудавшееся — нет. Неудачу wagmi
@@ -175,7 +172,7 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
       connectTried.current = false;
       return;
     }
-    if (door !== "turnkey" || !account) return;
+    if (!account) return;
     if (wagmiAccount.isConnecting || wagmiAccount.isReconnecting) return;
     if (connectTried.current) return;
     const connector = connectors.find((c) => c.id === TURNKEY_CONNECTOR_ID);
@@ -191,7 +188,6 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
     reconnect({ connectors: [connector] });
     connect({ connector });
   }, [
-    door,
     account,
     wagmiAccount.isConnected,
     wagmiAccount.isConnecting,
@@ -202,10 +198,7 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
   ]);
 
   // Шаг 4. Газ от шлюза — до первой ончейн-записи, потому что встроенный
-  // кошелёк создаётся пустым. Тоже только за дверью `turnkey`: у внешнего
-  // кошелька свой газ, и просить долив на адрес, которым пользователь никогда
-  // не воспользуется, значит тратить настоящий ETH фаусета и ячейку
-  // рейт-лимита впустую. Отказ в доливе — обычный ответ вернувшемуся
+  // кошелёк создаётся пустым. Отказ в доливе — обычный ответ вернувшемуся
   // пользователю, поэтому `requestGasGrant` не бросает, а исход не
   // останавливает вход.
   useQuery({
@@ -218,7 +211,6 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
         signMessage: ({ message }) => account!.signMessage({ message }),
       }),
     enabled:
-      door === "turnkey" &&
       subOrgId !== null &&
       account !== undefined &&
       address !== undefined &&

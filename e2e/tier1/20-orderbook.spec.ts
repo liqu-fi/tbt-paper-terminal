@@ -264,7 +264,7 @@ test.describe("order book panel", () => {
     // `innerText` режет их построчно по-разному в разных раскладках.
     await expect(book.bidRow(0)).toContainText("69,990");
     await book.bidRow(0).click();
-    await expect(trade.tab("limit")).toHaveAttribute("aria-pressed", "true");
+    await expect(trade.tab("limit")).toHaveAttribute("data-state", "active");
     await expect(trade.limitPriceInput).toHaveValue("69990");
   });
 

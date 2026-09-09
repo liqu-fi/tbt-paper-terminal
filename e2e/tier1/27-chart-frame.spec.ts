@@ -2,14 +2,12 @@ import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
 test.describe("chart frame", () => {
-  test("рамка несёт интервалы и диапазоны", async ({ page, world }) => {
+  test("рамка несёт интервалы", async ({ page, world }) => {
     const { chart } = await enterTerminal(page, world);
 
     await expect(chart.root).toBeVisible();
     await expect(chart.interval("1h")).toBeVisible();
     await expect(chart.interval("1d")).toBeVisible();
-    await expect(chart.range("1D")).toBeVisible();
-    await expect(chart.range("1Y")).toBeVisible();
   });
 
   test("кнопки 1s нет — такого интервала оракул не отдаёт", async ({
@@ -23,19 +21,19 @@ test.describe("chart frame", () => {
     await expect(chart.interval("1s")).toHaveCount(0);
   });
 
-  test("выбранный диапазон переживает перезагрузку", async ({
+  test("выбранный интервал переживает перезагрузку", async ({
     page,
     world,
   }) => {
     const { app, chart } = await enterTerminal(page, world);
 
-    await chart.range("1M").click();
-    await expect(chart.range("1M")).toHaveAttribute("data-active", "true");
+    await chart.interval("4h").click();
+    await expect(chart.interval("4h")).toHaveAttribute("data-active", "true");
 
     await page.reload();
     await expect(app.terminal).toBeVisible({ timeout: 25_000 });
-    await expect(chart.range("1M")).toHaveAttribute("data-active", "true");
-    await expect(chart.range("1D")).toHaveAttribute("data-active", "false");
+    await expect(chart.interval("4h")).toHaveAttribute("data-active", "true");
+    await expect(chart.interval("1h")).toHaveAttribute("data-active", "false");
   });
 
   test("% и log исключают друг друга", async ({ page, world }) => {

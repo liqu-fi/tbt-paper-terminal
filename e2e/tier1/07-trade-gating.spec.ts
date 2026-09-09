@@ -156,9 +156,9 @@ test.describe("trade form gating & controls", () => {
     // Размер 1 BTC при марке $70 000 и плече 2 — стоимость $35 000; поддержка
     // 0,5% рынка мока даёт требование $350, то есть запас $34 650 в обе
     // стороны от марка.
-    await expect(trade.orderQty).toContainText("1 / 1 BTC");
-    await expect(trade.orderValue).toContainText("$70,000.00 / $70,000.00 USD");
-    await expect(trade.orderCost).toContainText("$35,000.00 / $35,000.00 USD");
+    await expect(trade.orderQty).toContainText("1 BTC");
+    await expect(trade.orderValue).toContainText("$70,000.00 USD");
+    await expect(trade.orderCost).toContainText("$35,000.00 USD");
     await expect(trade.orderLiqPrice).toHaveText("35,350 / 104,650");
   });
 
@@ -171,7 +171,7 @@ test.describe("trade form gating & controls", () => {
     // Сводка — единственное место, где видно, чем два нажатия различаются;
     // появляясь только с размером, она прятала бы это до самого решения.
     await expect(trade.orderSummary).toBeVisible();
-    await expect(trade.orderQty).toContainText("0 / 0");
+    await expect(trade.orderQty).toHaveText(/^0 /);
     await expect(trade.orderLiqPrice).toHaveText("— / —");
   });
 
