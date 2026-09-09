@@ -1,9 +1,5 @@
 import { AppPage } from "../pages/AppPage";
-import {
-  ChartFramePage,
-  MarketHeaderPanel,
-  MarketTabsPanel,
-} from "../pages/TerminalPanels";
+import { ChartFramePage, MarketHeaderPanel } from "../pages/TerminalPanels";
 import { liveConfigured } from "./env";
 import { expect, test } from "./liveFixtures";
 
@@ -30,16 +26,11 @@ test.describe("live: шапка рынка и рамка чарта", () => {
     expect(count).toBeGreaterThan(0);
 
     const first = market.searchRows.first();
-    const id = (await first.getAttribute("data-testid"))!.replace(
-      "market-row-",
-      "",
-    );
+    // Символ — первая жирная подпись строки; после выбора он же стоит в пилюле.
+    const symbol = await first.locator("span.font-semibold").first().innerText();
     await first.click();
     await expect(market.search).toHaveCount(0);
-    await expect(new MarketTabsPanel(page).tab(id)).toHaveAttribute(
-      "data-active",
-      "true",
-    );
+    await expect(market.pill).toContainText(symbol);
   });
 
   test("оракульный ряд отвечает на каждом интервале рамки", async ({
@@ -83,7 +74,6 @@ test.describe("live: шапка рынка и рамка чарта", () => {
     // говорит — значение или честный прочерк, но не пустоту и не «NaN».
     for (const name of [
       "mark-price",
-      "spot-price",
       "funding",
       "open-interest",
       "volume-24h",

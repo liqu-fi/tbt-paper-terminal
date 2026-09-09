@@ -264,6 +264,26 @@ export function handleEthCall(world: MockWorld, to: string, data: string): Hex {
  * Apply a write (eth_sendTransaction calldata) to the world. Recurses into
  * forwarder aggregate3 batches. Returns receipt logs (e.g. AccountCreated).
  */
+/**
+ * Снимает ли эта запись коллатерал — прямой `modifyCollateral` с отрицательной
+ * дельтой или форвардерный `aggregate3`, внутри которого он есть. Депозит тоже
+ * идёт батчем через форвардер, но с положительной дельтой, и сюда не попадает.
+ */
+export function withdrawsCollateral(data: string): boolean {
+  const selector = selectorOf(data);
+  if (selector === AGGREGATE3_SELECTOR) {
+    const [calls] = decodeAbiParameters(
+      multicall3Abi[0].inputs,
+      bodyOf(data),
+    ) as unknown as [ReadonlyArray<{ callData: Hex }>];
+    return calls.some((call) => withdrawsCollateral(call.callData));
+  }
+  if (selector !== MODIFY_COLLATERAL_SELECTOR) return false;
+  const item = REGISTRY.get(selector)!;
+  const args = decodeAbiParameters(item.inputs, bodyOf(data)) as readonly unknown[];
+  return (args[2] as bigint) < 0n;
+}
+
 export function applyWrite(
   world: MockWorld,
   to: string,

@@ -20,17 +20,20 @@ async function heightOf(locator: Locator): Promise<number> {
 
 test.describe("раскладка терминала", () => {
   test("чарт сворачивается и разворачивается", async ({ page, world }) => {
-    const { layout, trade } = await enterTerminal(page, world);
+    const { layout, book, trade } = await enterTerminal(page, world);
     await expect(layout.chartPanel).toBeVisible();
-    const expandedWidth = await widthOf(trade.root);
+    const expandedWidth = await widthOf(book.root);
+    const tradeWidth = await widthOf(trade.root);
 
     await layout.toggleChart();
     await expect(layout.chartPanel).toBeHidden();
-    // Свёрнутый чарт обязан отдавать освободившуюся ширину форме, а не
+    // Свёрнутый чарт обязан отдавать освободившуюся ширину стакану, а не
     // просто прятать свою карточку внутри неизменной колонки — иначе
-    // "свёртка" — это обман, а не раскладка.
-    const collapsedWidth = await widthOf(trade.root);
+    // "свёртка" — это обман, а не раскладка. Правая колонка — постоянная
+    // рейка на всю высоту, её ширина от чарта не зависит.
+    const collapsedWidth = await widthOf(book.root);
     expect(collapsedWidth).toBeGreaterThan(expandedWidth + 100);
+    expect(await widthOf(trade.root)).toBe(tradeWidth);
 
     await layout.toggleChart();
     await expect(layout.chartPanel).toBeVisible();

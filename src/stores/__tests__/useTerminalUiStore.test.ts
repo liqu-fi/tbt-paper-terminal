@@ -48,21 +48,6 @@ describe("стор состояния экрана", () => {
     expect(useTerminalUiStore.getState().favoriteMarkets).toEqual(["201"]);
   });
 
-  it("открытая вкладка не открывается второй раз", () => {
-    const { openMarket } = useTerminalUiStore.getState();
-    openMarket("200");
-    openMarket("201");
-    openMarket("200");
-    expect(useTerminalUiStore.getState().openMarkets).toEqual(["200", "201"]);
-  });
-
-  it("последняя вкладка не закрывается", () => {
-    const { openMarket, closeMarket } = useTerminalUiStore.getState();
-    openMarket("200");
-    closeMarket("200");
-    expect(useTerminalUiStore.getState().openMarkets).toEqual(["200"]);
-  });
-
   it("режимы шкалы взаимно исключают друг друга", () => {
     const { setChartScaleMode } = useTerminalUiStore.getState();
     setChartScaleMode("percent");

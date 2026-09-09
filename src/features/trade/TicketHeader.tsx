@@ -1,6 +1,3 @@
-import { PlusCircle } from "lucide-react";
-import { useState } from "react";
-
 import {
   Select,
   SelectContent,
@@ -8,60 +5,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fmtUsd } from "../../lib/format";
-import { DepositDialog } from "../account/DepositDialog";
 import { leverageSteps } from "./leverageSteps";
 
 /**
- * Шапка тикета: выбор плеча и доступная маржа с кнопкой пополнения.
+ * Выбор плеча — правый край строки табов тикета.
  *
  * @remarks
  * Макет ставит рядом вторую пилюлю — `Cross ▾`. Она не рисуется: режима маржи
  * в API нет, и переключатель, который ничего не переключает, обещает
  * возможность, которой у площадки нет.
  *
- * Названия валюты рядом с суммой тоже нет, хотя макет его показывает: рынок
- * котировочного символа не отдаёт (`MarketSummary` — это id, symbol, feed), а
- * `fmtUsd` уже ставит `$`. Приписать сюда слово значило бы назвать валюту,
- * источника которой в терминале не существует.
+ * Доступной маржи здесь тоже нет: то же число уже стоит в шапке рынка
+ * (`margin …`) рядом с Deposit/Withdraw, и второй экземпляр под другой
+ * подписью читался как другая величина.
  */
 export function TicketHeader({
   leverage,
   maxLeverage,
   onLeverage,
-  available,
 }: {
   leverage: number;
   /** Потолок плеча рынка; `null` — рынок его не объявил. */
   maxLeverage: number | null;
   onLeverage: (l: number) => void;
-  /** Доступная маржа, 18 знаков; `null` — ответа ещё нет. */
-  available: bigint | null;
 }) {
-  const [depositOpen, setDepositOpen] = useState(false);
   return (
-    // Одна строка вместо двух: доступная маржа слева, плечо справа. Столбиком
-    // шапка стоила ~60px высоты колонки тикета — на ноутбучном экране на эти
-    // пиксели уезжало под скролл поле количества, без которого ордер не подать.
-    <div className="flex items-center justify-between gap-2 text-[11px]">
-      <span className="flex items-center gap-2">
-        <span className="text-muted">Available</span>
-        <span className="text-text" data-testid="ticket-available">
-          {/* Прочерк, пока ответа о марже нет: ноль читался бы как
-              измеренный пустой счёт. */}
-          {available === null ? "—" : fmtUsd(available)}
-        </span>
-        <button
-          type="button"
-          aria-label="Deposit"
-          onClick={() => setDepositOpen(true)}
-          className="text-long hover:opacity-80"
-          data-testid="ticket-deposit-button"
-        >
-          <PlusCircle size={14} />
-        </button>
-      </span>
-
+    <div className="ml-auto flex shrink-0 items-center text-[11px]">
       <Select
         value={String(leverage)}
         onValueChange={(v) => onLeverage(Number(v))}
@@ -84,8 +53,6 @@ export function TicketHeader({
           ))}
         </SelectContent>
       </Select>
-
-      <DepositDialog open={depositOpen} onClose={() => setDepositOpen(false)} />
     </div>
   );
 }

@@ -72,29 +72,16 @@ export function MarketSearch() {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<"all" | "favorites">("all");
   const toggleFavorite = useTerminalUiStore((s) => s.toggleFavorite);
-  const openMarket = useTerminalUiStore((s) => s.openMarket);
-  const searchOpen = useTerminalUiStore((s) => s.searchOpen);
-  const setSearchOpen = useTerminalUiStore((s) => s.setSearchOpen);
-
-  // Открыть поиск умеют двое: пилюля шапки и `+` полосы вкладок. Флаг стора —
-  // общий канал между ними; второй экземпляр поиска разошёлся бы с первым по
-  // избранному и по области.
-  const isOpen = open || searchOpen;
-  function setOpenBoth(next: boolean) {
-    setOpen(next);
-    setSearchOpen(next);
-  }
 
   const shown = scope === "all" ? rows : rows.filter((r) => r.favorite);
 
   function pick(row: MarketRow) {
     setMarketId(row.id);
-    openMarket(row.id.toString());
-    setOpenBoth(false);
+    setOpen(false);
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setOpenBoth}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -178,7 +165,7 @@ export function MarketSearch() {
                     )}
                   </span>
                   <LastPrice id={row.id} />
-                  <ChangeCell id={row.id} enabled={isOpen} />
+                  <ChangeCell id={row.id} enabled={open} />
                   <span className="text-right tabular-nums">
                     {row.volumeUsd === null ? DASH : compactUsd(row.volumeUsd)}
                   </span>

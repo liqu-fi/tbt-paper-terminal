@@ -14,6 +14,7 @@ async function connectorIds(): Promise<string[]> {
 describe("коннекторы wagmi", () => {
   it("в продукте — только Turnkey", async () => {
     vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
+    vi.stubEnv("VITE_E2E_WALLET", "");
     vi.resetModules();
     expect(await connectorIds()).toEqual([TURNKEY_CONNECTOR_ID]);
   });

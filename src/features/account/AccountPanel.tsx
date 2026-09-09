@@ -22,24 +22,6 @@ export function AccountPanel() {
     >
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Account</span>
-        <span className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-sm border px-2 py-0.5 text-[11px] text-accent"
-            onClick={() => setDepositOpen(true)}
-            data-testid="account-deposit-button"
-          >
-            Deposit
-          </button>
-          <button
-            type="button"
-            className="rounded-sm border px-2 py-0.5 text-[11px] text-muted"
-            onClick={() => setWithdrawOpen(true)}
-            data-testid="account-withdraw-button"
-          >
-            Withdraw
-          </button>
-        </span>
       </div>
 
       {/* Две колонки, а не шесть строк подряд: столбиком карточка занимала
@@ -50,15 +32,6 @@ export function AccountPanel() {
           testid="account-unrealized-pnl"
           tone={summary.unrealizedPnl < 0n ? "text-short" : "text-long"}
           value={fmtSignedUsd(summary.unrealizedPnl)}
-        />
-        <Row
-          label="Account Value"
-          testid="account-value"
-          value={
-            summary.accountValue === undefined
-              ? DASH
-              : fmtUsd(summary.accountValue)
-          }
         />
         <Row
           label="Equity"

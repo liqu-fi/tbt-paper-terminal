@@ -37,9 +37,9 @@ test.describe("панель Account", () => {
     );
     const account = new AccountPanelPage(page);
 
-    // Стоимость счёта — ончейн getAvailableMargin (5 000 в readyWorld);
-    // лок приходит со шлюза и вычитается только из Equity.
-    await expect(account.row("value")).toHaveText("$5,000.00");
+    // Equity — ончейн getAvailableMargin (5 000 в readyWorld) минус лок,
+    // который приходит со шлюза; сама стоимость счёта на карточке не стоит —
+    // то же число уже показано в шапке рынка как `margin`.
     await expect(account.row("equity")).toHaveText("$4,960.00");
   });
 

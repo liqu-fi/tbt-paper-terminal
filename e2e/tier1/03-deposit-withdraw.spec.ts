@@ -6,23 +6,6 @@ import { expect, test } from "../support/fixtures";
 import { armHold, readyWorld, releaseHold } from "../support/world";
 
 test.describe("deposit & withdraw", () => {
-  test("шапка тикета показывает маржу и открывает пополнение", async ({
-    page,
-    world,
-  }) => {
-    const { trade, deposit } = await enterTerminal(page, world, () => {
-      const w = readyWorld();
-      w.accounts[0].available = 0n;
-      return w;
-    });
-
-    // Ноль показывается только потому, что он пришёл ответом: прочерк остаётся
-    // за состоянием «ответа ещё нет».
-    await expect(trade.ticketAvailable).toHaveText(/\$0\.00/);
-    await trade.openDeposit();
-    await expect(deposit.root).toBeVisible();
-  });
-
   test("depositing credits margin by the entered amount and enables trading", async ({
     page,
     world,

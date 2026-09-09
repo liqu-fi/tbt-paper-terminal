@@ -10,7 +10,6 @@ import {
   DepositDialog,
   LayoutPanel,
   MarketHeaderPanel,
-  MarketTabsPanel,
   OrderBookPanel,
   TradePanel,
   UserInfoPanel,
@@ -20,7 +19,6 @@ import {
 export interface Terminal {
   app: AppPage;
   market: MarketHeaderPanel;
-  tabs: MarketTabsPanel;
   chart: ChartFramePage;
   layout: LayoutPanel;
   trade: TradePanel;
@@ -46,7 +44,6 @@ export async function enterTerminal(
   return {
     app,
     market: new MarketHeaderPanel(page),
-    tabs: new MarketTabsPanel(page),
     chart: new ChartFramePage(page),
     layout: new LayoutPanel(page),
     trade: new TradePanel(page),

@@ -53,16 +53,14 @@ test.describe("market search", () => {
     await expect(market.marketRow(MARKET_ETH.id)).toBeVisible();
   });
 
-  test("Market Cap и Spot Price — прочерки, а не выдуманные числа", async ({
+  test("Market Cap — прочерк, а не выдуманное число", async ({
     page,
     world,
   }) => {
     const { market } = await enterTerminal(page, world, twoMarkets);
 
-    // Ни у шлюза, ни в SDK нет ни circulating supply, ни спотовой цены — обе
-    // ячейки обязаны молчать, а не показывать подставленный ноль.
-    await expect(market.stat("spot-price")).toContainText("—");
-
+    // Ни у шлюза, ни в SDK нет circulating supply — ячейка обязана молчать,
+    // а не показывать подставленный ноль.
     await market.openSearch();
     const cells = market.marketRow(MARKET.id).locator("> span");
     await expect(cells.nth(4)).toHaveText("—");

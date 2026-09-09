@@ -21,8 +21,18 @@ describe("env gateway-url guard", () => {
 });
 
 describe("дверь Turnkey", () => {
-  const full = () => {
+  // Каждая переменная задаётся явно, пустая — тоже: локальный `.env` с
+  // настоящими id Turnkey Vite подмешивает и в vitest, и «не задано» иначе
+  // зависело бы от того, что лежит у разработчика на диске.
+  const base = () => {
     vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
+    vi.stubEnv("VITE_E2E_WALLET", "");
+    vi.stubEnv("VITE_TURNKEY_SESSION", "");
+    vi.stubEnv("VITE_TURNKEY_ORG_ID", "");
+    vi.stubEnv("VITE_TURNKEY_AUTH_PROXY_CONFIG_ID", "");
+  };
+  const full = () => {
+    base();
     vi.stubEnv("VITE_TURNKEY_ORG_ID", "org-1");
     vi.stubEnv("VITE_TURNKEY_AUTH_PROXY_CONFIG_ID", "cfg-1");
   };
@@ -36,7 +46,7 @@ describe("дверь Turnkey", () => {
   });
 
   it("объясняет, чего не хватает, — вход единственный, флага нет", async () => {
-    vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
+    base();
     vi.stubEnv("VITE_TURNKEY_AUTH_PROXY_CONFIG_ID", "cfg-1");
     vi.resetModules();
     const { env, turnkeyLoginEnabled } = await import("../env");
@@ -45,7 +55,7 @@ describe("дверь Turnkey", () => {
   });
 
   it("под e2e-кошельком выключена и на пустой конфиг не жалуется", async () => {
-    vi.stubEnv("VITE_GATEWAY_URL", "https://gw.example.com/v1");
+    base();
     vi.stubEnv("VITE_E2E_WALLET", "true");
     vi.resetModules();
     const { e2eWallet, env, turnkeyLoginEnabled } = await import("../env");
