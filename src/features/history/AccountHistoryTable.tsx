@@ -15,7 +15,7 @@ import {
   fmtTime,
   fmtUsd,
 } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 import { useAccountLedger } from "./useAccountLedger";
 
 interface Row {
@@ -128,9 +128,7 @@ export function AccountHistoryTable() {
     () =>
       ledger.map((row) => ({
         ledger: row,
-        symbol:
-          markets.find((m) => m.id === row.marketId)?.symbol ??
-          row.marketId.toString(),
+        symbol: marketSymbol(markets, row.marketId),
       })),
     [ledger, markets],
   );
@@ -141,7 +139,6 @@ export function AccountHistoryTable() {
       columns={columns}
       testid="account-history-table"
       rowId={(r) => `${r.ledger.txHash}-${r.ledger.logIndex}`}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
       emptyText="No settlements yet."
     />

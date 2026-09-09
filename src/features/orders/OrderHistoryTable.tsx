@@ -14,7 +14,7 @@ import {
   fmtTime,
   parseWadLoose,
 } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 interface Row {
   order: GatewayOrder;
@@ -97,9 +97,7 @@ export function OrderHistoryTable() {
     () =>
       data.map((order) => ({
         order,
-        symbol:
-          markets.find((m) => m.id.toString() === order.marketId)?.symbol ??
-          order.marketId,
+        symbol: marketSymbol(markets, order.marketId),
       })),
     [data, markets],
   );
@@ -110,7 +108,6 @@ export function OrderHistoryTable() {
       columns={columns}
       testid="order-history-table"
       rowId={(r) => r.order.id}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
       emptyText="No past orders."
     />

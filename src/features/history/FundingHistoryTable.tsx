@@ -6,7 +6,7 @@ import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
 
 import { DASH, fmtHash, fmtSignedUsd, fmtTime } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 import { fundingRows, useAccountLedger } from "./useAccountLedger";
 
 interface Row {
@@ -72,9 +72,7 @@ export function FundingHistoryTable() {
     () =>
       fundingRows(ledger).map((row) => ({
         ledger: row,
-        symbol:
-          markets.find((m) => m.id === row.marketId)?.symbol ??
-          row.marketId.toString(),
+        symbol: marketSymbol(markets, row.marketId),
       })),
     [ledger, markets],
   );
@@ -85,7 +83,6 @@ export function FundingHistoryTable() {
       columns={columns}
       testid="funding-history-table"
       rowId={(r) => `${r.ledger.txHash}-${r.ledger.logIndex}`}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
       emptyText="No funding payments yet."
     />

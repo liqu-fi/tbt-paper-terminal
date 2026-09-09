@@ -15,7 +15,7 @@ import {
   fmtTime,
   fmtUsd,
 } from "../../lib/format";
-import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 interface Row {
   episode: PositionEpisode;
@@ -145,10 +145,7 @@ export function PositionHistoryTable() {
     () =>
       (data?.episodes ?? []).map((episode) => ({
         episode,
-        symbol:
-          episode.symbol ??
-          markets.find((m) => m.id === episode.marketId)?.symbol ??
-          episode.marketId.toString(),
+        symbol: episode.symbol ?? marketSymbol(markets, episode.marketId),
       })),
     [data, markets],
   );
@@ -159,7 +156,6 @@ export function PositionHistoryTable() {
       columns={columns}
       testid="position-history-table"
       rowId={(r) => `${r.episode.marketId}-${r.episode.openedAt}`}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
       // `available: false` — «индексатор не держит событий этого счёта вовсе»,
       // а пустой `episodes` при `available: true` — «счёт торговал и ничего не
