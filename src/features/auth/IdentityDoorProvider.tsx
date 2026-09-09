@@ -1,9 +1,7 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -11,38 +9,27 @@ import {
 import { useConfig, useReconnect } from "wagmi";
 
 import { turnkeyLoginEnabled } from "../../config/env";
-import {
-  clearDoor,
-  readDoor,
-  reconnectPlan,
-  writeDoor,
-  type IdentityDoor,
-} from "./identityDoor";
+import { reconnectPlan } from "./identityDoor";
+import { useDoorStore } from "./useDoorStore";
 
-export type IdentityDoorValue = {
-  /** Дверь, которой вошли в этой вкладке, либо `null`. */
-  door: IdentityDoor | null;
-  /** Восстановление сессии ещё идёт: показывать загрузку, а не экран входа. */
-  booting: boolean;
-  setDoor: (door: IdentityDoor) => void;
-  forgetDoor: () => void;
-};
+/**
+ * Восстановление сессии ещё идёт: показывать загрузку, а не экран входа.
+ *
+ * @remarks Единственное, что осталось в контексте. Сама дверь живёт в
+ * `useDoorStore` и читается оттуда напрямую; `booting` — настоящее состояние
+ * жизненного цикла, и держать его тут значит гарантировать порядок: провайдер
+ * стоит выше `SessionGate`, поэтому гейт видит `true` уже на первом кадре и
+ * экраном входа не мигает.
+ */
+const BootingContext = createContext<boolean>(false);
 
-const IdentityDoorContext = createContext<IdentityDoorValue | null>(null);
-
-/** Читает дверь сессии. Бросает вне `<IdentityDoorProvider>`. */
-export function useIdentityDoor(): IdentityDoorValue {
-  const value = useContext(IdentityDoorContext);
-  if (!value) {
-    throw new Error(
-      "useIdentityDoor: только внутри <IdentityDoorProvider>",
-    );
-  }
-  return value;
+/** Идёт ли восстановление сессии. Осмысленно только внутри провайдера. */
+export function useSessionBooting(): boolean {
+  return useContext(BootingContext);
 }
 
 /**
- * Владелец запомненной двери и восстановления сессии.
+ * Владелец восстановления сессии.
  *
  * @remarks
  * Монтируется прямо под `<WagmiProvider>` и БЕЗУСЛОВНО — не внутри обёртки
@@ -53,15 +40,13 @@ export function useIdentityDoor(): IdentityDoorValue {
  *
  * `reconnectOnMount` у `<WagmiProvider>` выключен именно ради этого компонента:
  * штатное восстановление wagmi перебирает все коннекторы и берёт первый
- * авторизованный — см. `identityDoor.ts` о том, почему это подключает не ту
+ * авторизованный — см. `useDoorStore` о том, почему это подключает не ту
  * личность.
  */
 export function IdentityDoorProvider({ children }: { children: ReactNode }) {
   const config = useConfig();
   const { reconnectAsync } = useReconnect();
-  const [door, setDoorState] = useState<IdentityDoor | null>(() =>
-    readDoor(window.localStorage),
-  );
+  const door = useDoorStore((s) => s.door);
   // Дверь, записанной которой ещё нет, значит одно из двух: пользователь пришёл
   // впервые либо сессия открыта сборкой, где двери ещё не запоминались. Во втором
   // случае восстановить надо ровно то, что восстанавливалось всегда, — иначе
@@ -75,7 +60,10 @@ export function IdentityDoorProvider({ children }: { children: ReactNode }) {
   // `react-hooks/set-state-in-effect` — оно бережёт от лишнего кадра рендера
   // со старым значением (тот же приём в useBookTick.ts/useTradesTape.ts).
   const [reconnectConnector] = useState(() => {
-    const plan = reconnectPlan(effectiveDoor, config.connectors.map((c) => c.id));
+    const plan = reconnectPlan(
+      effectiveDoor,
+      config.connectors.map((c) => c.id),
+    );
     return plan ? (config.connectors.find((c) => c.id === plan) ?? null) : null;
   });
   // Дверь есть и коннектор для неё нашёлся — значит восстанавливать что-то
@@ -115,24 +103,7 @@ export function IdentityDoorProvider({ children }: { children: ReactNode }) {
       .finally(() => setBooting(false));
   }, [reconnectConnector, reconnectAsync]);
 
-  const setDoor = useCallback((next: IdentityDoor) => {
-    writeDoor(window.localStorage, next);
-    setDoorState(next);
-  }, []);
-
-  const forgetDoor = useCallback(() => {
-    clearDoor(window.localStorage);
-    setDoorState(null);
-  }, []);
-
-  const value = useMemo<IdentityDoorValue>(
-    () => ({ door, booting, setDoor, forgetDoor }),
-    [door, booting, setDoor, forgetDoor],
-  );
-
   return (
-    <IdentityDoorContext.Provider value={value}>
-      {children}
-    </IdentityDoorContext.Provider>
+    <BootingContext.Provider value={booting}>{children}</BootingContext.Provider>
   );
 }

@@ -10,7 +10,8 @@ import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env, turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
-import { useIdentityDoor } from "./IdentityDoorProvider";
+import { useSessionBooting } from "./IdentityDoorProvider";
+import { useDoorStore } from "./useDoorStore";
 import { SignInPanel } from "./SignInPanel";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 
@@ -40,7 +41,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
  * оставалось открытым.
  */
 function TurnkeyBootGate({ children }: { children: ReactNode }) {
-  const { door } = useIdentityDoor();
+  const door = useDoorStore((s) => s.door);
   const { subOrgId, embedded } = useTurnkeyIdentity();
   const stillResolving = embedded.kind === "idle" || embedded.kind === "resolving";
   if (door === "turnkey" && subOrgId !== null && stillResolving) {
@@ -54,7 +55,7 @@ function TurnkeyBootGate({ children }: { children: ReactNode }) {
 }
 
 function SessionGateInner({ children }: { children: ReactNode }) {
-  const { booting } = useIdentityDoor();
+  const booting = useSessionBooting();
   // Саму ступень вычисляет useSessionStage(); здесь accountId остаётся
   // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
   const { data: accountIds } = useAccountQuery();

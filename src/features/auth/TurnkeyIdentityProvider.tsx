@@ -28,7 +28,7 @@ import { useAccount, useConnect, useReconnect } from "wagmi";
 
 import { megaethTestnet } from "../../config/chain";
 import { env } from "../../config/env";
-import { useIdentityDoor } from "./IdentityDoorProvider";
+import { useDoorStore } from "./useDoorStore";
 import {
   embeddedWalletView,
   heldAccountIsCurrent,
@@ -137,7 +137,7 @@ function machineReduce(machine: Machine, action: Action): Machine {
 export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
   const { authState, session } = useTurnkey();
   const stage = useSessionStage();
-  const { door } = useIdentityDoor();
+  const door = useDoorStore((s) => s.door);
   const wagmiAccount = useAccount();
   const token = useGatewayStore((s) => s.token);
   const queryClient = useQueryClient();

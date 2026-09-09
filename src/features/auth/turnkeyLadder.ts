@@ -1,6 +1,6 @@
 // src/features/auth/turnkeyLadder.ts
 import type { GasGrantOutcome } from "../wallet/gasGrant";
-import type { IdentityDoor } from "./identityDoor";
+import type { IdentityDoor } from "./useDoorStore";
 import type { SessionStage } from "@liq/core";
 
 /**
