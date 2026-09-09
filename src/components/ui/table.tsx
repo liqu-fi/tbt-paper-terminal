@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // shadcn-словарь заменён нашим, дословно:
-//   text-muted-foreground → text-muted   (подписи шапки и caption)
+//   text-muted-foreground → text-muted   (подписи шапки)
 //   bg-muted/50, data-[state=selected]:bg-muted → bg-surface-2
 //     (в словаре shadcn `muted` — нейтральная подложка, у нас этот тон занят
 //      под «выделено/нажато»: тем же bg-surface-2 красит активный таб TabsList)
@@ -63,16 +63,6 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   );
 }
 
-function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
-  return (
-    <tfoot
-      data-slot="table-footer"
-      className={cn("border-t bg-surface-2 font-medium", className)}
-      {...props}
-    />
-  );
-}
-
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
@@ -109,25 +99,10 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   );
 }
 
-function TableCaption({
-  className,
-  ...props
-}: React.ComponentProps<"caption">) {
-  return (
-    <caption
-      data-slot="table-caption"
-      className={cn("mt-4 text-sm text-muted", className)}
-      {...props}
-    />
-  );
-}
-
 export {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
