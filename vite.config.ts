@@ -16,18 +16,5 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env.DEPLOY_ENV": JSON.stringify(e.VITE_DEPLOY_ENV ?? "staging"),
     },
-    server: {
-      // Optional CORS fallback: proxy /gateway -> the real gateway origin.
-      // Use baseUrl '/gateway' in env.ts if you enable this.
-      proxy: e.VITE_GATEWAY_PROXY
-        ? {
-            "/gateway": {
-              target: e.VITE_GATEWAY_URL,
-              changeOrigin: true,
-              rewrite: (p) => p.replace(/^\/gateway/, ""),
-            },
-          }
-        : undefined,
-    },
   };
 });

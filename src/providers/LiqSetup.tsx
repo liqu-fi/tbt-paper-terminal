@@ -25,8 +25,6 @@ import { GasGrantRunner } from "../features/auth/GasGrantRunner";
 import { TurnkeyIdentityProvider } from "../features/auth/TurnkeyIdentityProvider";
 import { turnkeyAuthMethods } from "../features/auth/turnkeyAuthMethods";
 
-const DEFAULT_CHAIN_ID = 6343;
-
 /**
  * Builds the two SDK singletons and mounts <LiqProvider>.
  *
@@ -46,7 +44,7 @@ export function LiqSetup({ children }: { children: ReactNode }) {
     () =>
       new LiqClient({
         baseUrl: env.gatewayUrl,
-        chainId: chainId ?? DEFAULT_CHAIN_ID,
+        chainId: chainId ?? megaethTestnet.id,
       }),
     [chainId],
   );
@@ -57,7 +55,7 @@ export function LiqSetup({ children }: { children: ReactNode }) {
       transport: http(megaethTestnet.rpcUrls.default.http[0]),
     });
     return new LiqOnchain({
-      chainId: DEFAULT_CHAIN_ID,
+      chainId: megaethTestnet.id,
       publicClient,
       walletClient: walletClient ?? undefined,
     });
