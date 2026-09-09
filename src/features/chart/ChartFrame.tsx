@@ -1,11 +1,8 @@
-import { ORACLE_INTERVALS } from "@liq/core";
+import { maxBarsPerRequest, ORACLE_INTERVALS } from "@liq/core";
 
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
-import { CandleChart } from "./CandleChart";
-import { barsForRange, CHART_RANGES, fitInterval } from "./chartRanges";
-
-const RANGES = Object.keys(CHART_RANGES) as (keyof typeof CHART_RANGES)[];
+import { CandleChart, CHART_ROUTE } from "./CandleChart";
 
 function Control({
   testid,
@@ -34,9 +31,15 @@ function Control({
 }
 
 /**
- * Рамка чарта: интервал бара сверху, окно и шкала снизу.
+ * Рамка чарта: одна строка — интервал бара слева, шкала справа.
  *
  * @remarks
+ * Окна («1D…1Y») нет: история листается прокруткой чарта, а грузится сразу
+ * столько баров, сколько маршрут отдаёт за запрос (`maxBarsPerRequest`) — для
+ * минуты это сутки, для часа два месяца, для дня четыре года. Второй ряд
+ * кнопок читался как дубль первого, и глубже потолка маршрута он всё равно
+ * не заглядывал.
+ *
  * Кнопки `1s` нет — минимальный интервал обоих маршрутов минута, и кнопка,
  * которая не может показать секунды, обещала бы их.
  */
@@ -49,18 +52,11 @@ export function ChartFrame({
   actions?: React.ReactNode;
 }) {
   const interval = useTerminalUiStore((s) => s.chartInterval);
-  const range = useTerminalUiStore((s) => s.chartRange);
   const scaleMode = useTerminalUiStore((s) => s.chartScaleMode);
   const autoScale = useTerminalUiStore((s) => s.chartAutoScale);
   const setChartInterval = useTerminalUiStore((s) => s.setChartInterval);
-  const setChartRange = useTerminalUiStore((s) => s.setChartRange);
   const setChartScaleMode = useTerminalUiStore((s) => s.setChartScaleMode);
   const toggleAutoScale = useTerminalUiStore((s) => s.toggleAutoScale);
-
-  // Интервал, которым окно действительно рисуется. Подсветка остаётся на
-  // выбранном: расхождение между «что я нажал» и «чем нарисовано» видно, и
-  // это честнее молчаливой подмены.
-  const effective = fitInterval(range, interval);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1" data-testid="chart-frame">
@@ -73,28 +69,6 @@ export function ChartFrame({
             onClick={() => setChartInterval(iv)}
           >
             {iv}
-          </Control>
-        ))}
-        {actions ? <div className="ml-auto flex items-center">{actions}</div> : null}
-      </div>
-      <div className="min-h-0 flex-1">
-        <CandleChart
-          marketId={marketId}
-          interval={effective}
-          bars={barsForRange(range, effective)}
-          scaleMode={scaleMode}
-          autoScale={autoScale}
-        />
-      </div>
-      <div className="flex items-center gap-1">
-        {RANGES.map((key) => (
-          <Control
-            key={key}
-            testid={`chart-range-${key}`}
-            active={key === range}
-            onClick={() => setChartRange(key)}
-          >
-            {key}
           </Control>
         ))}
         <div className="flex-1" />
@@ -119,6 +93,16 @@ export function ChartFrame({
         >
           auto
         </Control>
+        {actions ? <div className="ml-1 flex items-center">{actions}</div> : null}
+      </div>
+      <div className="min-h-0 flex-1">
+        <CandleChart
+          marketId={marketId}
+          interval={interval}
+          bars={maxBarsPerRequest(interval, CHART_ROUTE)}
+          scaleMode={scaleMode}
+          autoScale={autoScale}
+        />
       </div>
     </div>
   );

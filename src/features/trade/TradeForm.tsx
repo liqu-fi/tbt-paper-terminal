@@ -15,6 +15,8 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { sanitizeDecimal } from "../../lib/decimal";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { EntryTpSlFields } from "./EntryTpSlFields";
@@ -236,25 +238,27 @@ export function TradeForm() {
      * было видно вообще — самое важное действие экрана пряталось ниже сгиба.
      */
     <div
-      className="flex h-full min-h-0 w-full flex-col rounded-[var(--radius-card)] border border-border bg-surface"
+      className="flex h-full min-h-0 w-full flex-col bg-surface"
       data-testid="trade-form"
     >
       <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-2.5">
         {/* Табы и плечо в одной строке: отдельная строка под одну пилюлю
-            стоила тикету ~36px высоты. */}
-        <div className="flex items-center gap-1 text-[11px]">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`flex-1 rounded-[var(--radius-sm)] py-1 ${tab === t ? "bg-surface-2 text-text" : "text-muted"}`}
-              data-testid={`trade-tab-${tabSlug(t)}`}
-              aria-pressed={tab === t}
-            >
-              {t}
-            </button>
-          ))}
+            стоила тикету ~36px высоты. Табы — тот же `Tabs`, что у
+            Order Book|Trades: один сегментный переключатель на весь экран. */}
+        <div className="flex items-center gap-2">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+            <TabsList>
+              {TABS.map((t) => (
+                <TabsTrigger
+                  key={t}
+                  value={t}
+                  data-testid={`trade-tab-${tabSlug(t)}`}
+                >
+                  {t}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
           <TicketHeader
             leverage={sizing.leverage}
             maxLeverage={sizing.maxLeverage}

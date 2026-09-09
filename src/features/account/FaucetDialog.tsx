@@ -14,6 +14,9 @@ import {
 import { USDC_DECIMALS } from "../../lib/decimal";
 import { faucetRow, fmtRemaining } from "./faucetRow";
 
+/** Тестовый ETH на газ раздаёт сама сеть; наш фаусет — только USDC. */
+const MEGAETH_FAUCET_URL = "https://testnet.megaeth.com/";
+
 export function FaucetDialog({
   open,
   onClose,
@@ -41,6 +44,20 @@ export function FaucetDialog({
         {/* Тело монтируется только открытым: `useFaucetState` опрашивает
             цепь каждые 15с, и закрытый диалог не должен этого делать. */}
         {open && <FaucetBody />}
+        {/* Снаружи тела: ссылка нужна и когда фаусет USDC недоступен —
+            без ETH на газ не пройдёт даже Claim. */}
+        <p className="mt-3 text-[11px] text-muted">
+          Test ETH for gas:{" "}
+          <a
+            href={MEGAETH_FAUCET_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent underline"
+            data-testid="faucet-eth-link"
+          >
+            MegaETH testnet faucet ↗
+          </a>
+        </p>
       </DialogContent>
     </Dialog>
   );

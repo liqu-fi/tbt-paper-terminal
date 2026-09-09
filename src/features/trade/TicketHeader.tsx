@@ -30,13 +30,14 @@ export function TicketHeader({
   onLeverage: (l: number) => void;
 }) {
   return (
-    <div className="ml-auto flex shrink-0 items-center text-[11px]">
+    <div className="ml-auto flex shrink-0 items-center">
       <Select
         value={String(leverage)}
         onValueChange={(v) => onLeverage(Number(v))}
       >
+        {/* Та же геометрия, что у `TabsList` рядом: высота, радиус, подложка. */}
         <SelectTrigger
-          className="h-7 w-auto shrink-0 gap-1 rounded-full bg-surface-2 px-3 text-[11px]"
+          className="w-auto shrink-0 gap-1 rounded-lg border-0 bg-surface-2 px-3 text-sm font-medium shadow-none"
           data-testid="leverage-select"
         >
           <SelectValue data-testid="leverage-value">{leverage}×</SelectValue>

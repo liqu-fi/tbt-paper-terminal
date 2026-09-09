@@ -44,6 +44,8 @@ const TICKET_MAX_PX = "480px";
 // Вложенные группы своих минимумов наружу не сообщают — левой колонке
 // минимум задаётся руками как сумма чарта и стакана.
 const LEFT_MIN_PX = "580px";
+/** Одна рамка на всё — шапку рынка и сетку; панели внутри без своих (см. `Card`). */
+const FRAME = "overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface";
 
 /**
  * Раскладка: слева чарт со стаканом над историями, справа — колонка тикета и
@@ -80,13 +82,13 @@ export function Terminal() {
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col gap-2"
+      className={`flex min-h-0 flex-1 flex-col ${FRAME}`}
       data-testid="terminal-root"
     >
       {!bottomFullscreen && <MarketHeader />}
       {bottomFullscreen ? (
         // Весь экран — нижней панели: ни шапки рынка, ни чарта, ни тикета.
-        <div className="flex min-h-0 flex-1 flex-col">{bottom}</div>
+        bottom
       ) : (
         <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
           <ResizablePanel id="left-column" minSize={LEFT_MIN_PX}>
@@ -157,7 +159,7 @@ export function Terminal() {
             maxSize={TICKET_MAX_PX}
           >
             <div
-              className="flex h-full min-h-0 flex-col gap-2"
+              className="flex h-full min-h-0 flex-col"
               data-testid="trade-column"
             >
               {/* Тикет — по содержимому, счёт сразу под ним: растянутый на всю

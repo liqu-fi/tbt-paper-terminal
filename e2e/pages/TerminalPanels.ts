@@ -465,9 +465,6 @@ export class ChartFramePage {
   interval(iv: string): Locator {
     return this.page.getByTestId(`chart-interval-${iv}`);
   }
-  range(key: string): Locator {
-    return this.page.getByTestId(`chart-range-${key}`);
-  }
   scale(name: "percent" | "log" | "auto"): Locator {
     return this.page.getByTestId(`chart-scale-${name}`);
   }

@@ -53,11 +53,20 @@ function ResizablePanel({
 }
 
 /**
- * Ручка ресайза: линия в 1px, зона захвата — 9px.
+ * Ручка ресайза — единственный шов между панелями.
  *
- * @remarks Псевдоэлемент `after` расширяет площадь попадания, не двигая
- * раскладку: сама линия остаётся волосяной, но промахнуться по ней мышью уже
- * нельзя. Отключённая ручка (`disabled`) теряет и курсор, и подсветку — мёртвая
+ * @remarks Три слоя, каждый со своей ролью:
+ * - сам элемент — волосяная линия в 1px цвета рамки; это и есть граница
+ *   панелей, у которых своей рамки нет (см. `Card`);
+ * - `before` — подсветка в 3px акцентом, в покое невидима, проявляется при
+ *   наведении и на всё время перетаскивания (`data-separator="active"` —
+ *   состояние ставит библиотека, поэтому подсветка не гаснет, когда курсор
+ *   во время драга уходит с линии);
+ * - `after` — зона захвата в 9px, раскладку не двигает: промахнуться по
+ *   линии мышью нельзя, а грип-бейдж показывается только под курсором —
+ *   постоянный бейдж на каждом шве был шумом.
+ *
+ * Отключённая ручка (`disabled`) теряет курсор, подсветку и грип — мёртвая
  * зона не должна выглядеть живой.
  */
 function ResizableHandle({
@@ -71,19 +80,26 @@ function ResizableHandle({
     <ResizablePrimitive.Separator
       data-slot="resizable-handle"
       className={cn(
-        "relative flex w-px cursor-col-resize items-center justify-center bg-border transition-colors",
+        "group relative flex w-px cursor-col-resize items-center justify-center bg-border",
+        "focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:outline-hidden",
+        // подсветка
+        "before:absolute before:inset-y-0 before:left-1/2 before:z-10 before:w-[3px] before:-translate-x-1/2 before:bg-accent before:opacity-0 before:transition-opacity",
+        "hover:before:opacity-100 data-[separator=active]:before:opacity-100",
+        // зона захвата
         "after:absolute after:inset-y-0 after:left-1/2 after:w-[9px] after:-translate-x-1/2",
-        "hover:bg-accent/70 focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:outline-hidden",
+        // горизонтальная ориентация
         "aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:cursor-row-resize",
-        "aria-[orientation=horizontal]:after:top-1/2 aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-[9px] aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2",
-        "data-[disabled]:cursor-default data-[disabled]:hover:bg-border",
+        "aria-[orientation=horizontal]:before:inset-x-0 aria-[orientation=horizontal]:before:inset-y-auto aria-[orientation=horizontal]:before:top-1/2 aria-[orientation=horizontal]:before:h-[3px] aria-[orientation=horizontal]:before:w-full aria-[orientation=horizontal]:before:translate-x-0 aria-[orientation=horizontal]:before:-translate-y-1/2",
+        "aria-[orientation=horizontal]:after:inset-x-0 aria-[orientation=horizontal]:after:inset-y-auto aria-[orientation=horizontal]:after:top-1/2 aria-[orientation=horizontal]:after:h-[9px] aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2",
         "[&[aria-orientation=horizontal]>div]:rotate-90",
+        // отключённая
+        "data-[disabled]:cursor-default data-[disabled]:before:hidden data-[disabled]:[&>div]:hidden",
         className,
       )}
       {...props}
     >
       {withHandle && (
-        <div className="z-10 flex h-4 w-3 items-center justify-center rounded-xs border bg-border">
+        <div className="z-20 flex h-4 w-3 items-center justify-center rounded-xs border bg-border opacity-0 transition-opacity group-hover:opacity-100 group-data-[separator=active]:opacity-100">
           <GripVerticalIcon className="size-2.5" />
         </div>
       )}

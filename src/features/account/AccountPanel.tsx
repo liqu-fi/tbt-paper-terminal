@@ -17,7 +17,7 @@ export function AccountPanel() {
     // высоту. Сжимаясь, она отдавала бы форме ноль пикселей скролла и рисовалась
     // поверх неё (см. e2e/tier1/29-layout-containment.spec.ts).
     <Card
-      className="flex shrink-0 flex-col gap-1.5 p-2.5"
+      className="flex shrink-0 flex-col gap-1.5 border-t border-border p-2.5"
       data-testid="account-panel"
     >
       <div className="flex items-center justify-between">

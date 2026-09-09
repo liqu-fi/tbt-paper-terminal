@@ -40,7 +40,10 @@ export function MarketHeader() {
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-6" data-testid="market-header">
+      <div
+        className="flex shrink-0 items-center gap-6 border-b border-border px-3 py-1.5"
+        data-testid="market-header"
+      >
         <MarketSearch />
         <div className="flex flex-col">
           <span

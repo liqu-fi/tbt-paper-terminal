@@ -2,9 +2,6 @@ import type { OracleCandleInterval } from "@liq/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-/** Окно чарта — ключи нижнего ряда рамки. */
-export type ChartRangeKey = "1D" | "5D" | "1M" | "3M" | "6M" | "1Y";
-
 /**
  * Режим ценовой шкалы.
  *
@@ -26,7 +23,6 @@ interface TerminalUiState {
    */
   favoriteMarkets: string[];
   chartInterval: OracleCandleInterval;
-  chartRange: ChartRangeKey;
   chartScaleMode: ChartScaleMode;
   chartAutoScale: boolean;
 }
@@ -36,7 +32,6 @@ interface TerminalUiActions {
   toggleBottomFullscreen: () => void;
   toggleFavorite: (marketId: string) => void;
   setChartInterval: (interval: OracleCandleInterval) => void;
-  setChartRange: (range: ChartRangeKey) => void;
   setChartScaleMode: (mode: ChartScaleMode) => void;
   toggleAutoScale: () => void;
   reset: () => void;
@@ -47,7 +42,6 @@ const INITIAL: TerminalUiState = {
   bottomFullscreen: false,
   favoriteMarkets: [],
   chartInterval: "1h",
-  chartRange: "1D",
   chartScaleMode: "normal",
   chartAutoScale: true,
 };
@@ -74,7 +68,6 @@ export const useTerminalUiStore = create<TerminalUiState & TerminalUiActions>()(
             : [...s.favoriteMarkets, marketId],
         })),
       setChartInterval: (chartInterval) => set({ chartInterval }),
-      setChartRange: (chartRange) => set({ chartRange }),
       setChartScaleMode: (mode) =>
         set((s) => ({
           // Повторный клик по включённому режиму возвращает обычную шкалу:
