@@ -20,8 +20,6 @@ import "@turnkey/react-wallet-kit/styles.css";
 
 import { megaethTestnet } from "../config/chain";
 import { env, turnkeyLoginEnabled } from "../config/env";
-import { EmbeddedWalletRunner } from "../features/auth/EmbeddedWalletRunner";
-import { GasGrantRunner } from "../features/auth/GasGrantRunner";
 import { TurnkeyIdentityProvider } from "../features/auth/TurnkeyIdentityProvider";
 import { turnkeyAuthMethods } from "../features/auth/turnkeyAuthMethods";
 
@@ -80,11 +78,7 @@ export function LiqSetup({ children }: { children: ReactNode }) {
   const mounted = Boolean(orgId) && (enabled || turnkeyLoginEnabled);
 
   const inner = mounted ? (
-    <TurnkeyIdentityProvider>
-      <EmbeddedWalletRunner />
-      <GasGrantRunner />
-      {children}
-    </TurnkeyIdentityProvider>
+    <TurnkeyIdentityProvider>{children}</TurnkeyIdentityProvider>
   ) : (
     children
   );
