@@ -110,6 +110,16 @@ export const perpsMarketProxyAbi = [
     outputs: [{ name: "", type: "int256" }],
   },
   {
+    name: "getCollateralAmount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "accountId", type: "uint128" },
+      { name: "collateralId", type: "uint128" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
     name: "debt",
     type: "function",
     stateMutability: "view",
