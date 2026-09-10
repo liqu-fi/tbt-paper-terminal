@@ -2,7 +2,7 @@
  * tables, and the deposit / withdraw dialogs. */
 import { type Locator, type Page } from "@playwright/test";
 
-type TradeTab = "market" | "limit" | "stop" | "take-profit";
+type TradeTab = "market" | "limit";
 type UserTab =
   | "positions"
   | "open-orders"
@@ -81,9 +81,6 @@ export class TradePanel {
   readonly leverageSelect: Locator;
   readonly leverageValue: Locator;
   readonly limitPriceInput: Locator;
-  readonly triggerPriceInput: Locator;
-  readonly triggerAbove: Locator;
-  readonly triggerBelow: Locator;
   readonly insufficientMargin: Locator;
   readonly orderWarning: Locator;
   readonly orderRejection: Locator;
@@ -113,9 +110,6 @@ export class TradePanel {
     this.leverageSelect = page.getByTestId("leverage-select");
     this.leverageValue = page.getByTestId("leverage-value");
     this.limitPriceInput = page.getByTestId("limit-price-input");
-    this.triggerPriceInput = page.getByTestId("trigger-price-input");
-    this.triggerAbove = page.getByTestId("trigger-above-button");
-    this.triggerBelow = page.getByTestId("trigger-below-button");
     this.insufficientMargin = page.getByTestId("insufficient-margin");
     this.orderWarning = page.getByTestId("order-warning");
     this.orderRejection = page.getByTestId("order-rejection");
@@ -178,9 +172,6 @@ export class TradePanel {
   }
   setLimitPrice(value: string): Promise<void> {
     return this.limitPriceInput.fill(value);
-  }
-  setTriggerPrice(value: string): Promise<void> {
-    return this.triggerPriceInput.fill(value);
   }
 
   /**

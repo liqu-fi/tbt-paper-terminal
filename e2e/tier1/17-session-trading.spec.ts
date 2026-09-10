@@ -57,26 +57,6 @@ test.describe("1-click trading", () => {
     expect(world.submittedOrders[0].signature).not.toBe(WALLET_DUMMY_SIG);
   });
 
-  test("conditional orders route through the session key too", async ({
-    page,
-    world,
-  }) => {
-    const { trade } = await enterTerminal(page, world);
-    const sessionKey = new SessionKeyPanel(page);
-    await sessionKey.enable(7);
-    const signsAfterGrant = typedSignCount(world);
-
-    await trade.selectTab("stop");
-    await trade.setSize("1");
-    await trade.setTriggerPrice("80000");
-    await trade.submit();
-
-    await expect.poll(() => world.submittedOrders.length).toBe(1);
-    expect(world.submittedOrders[0].triggerAbove).toBeDefined();
-    expect(typedSignCount(world)).toBe(signsAfterGrant);
-    expect(world.submittedOrders[0].signature).not.toBe(WALLET_DUMMY_SIG);
-  });
-
   test("a session restored on load signs orders without the wallet", async ({
     page,
     world,

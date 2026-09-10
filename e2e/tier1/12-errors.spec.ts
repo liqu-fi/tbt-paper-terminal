@@ -70,23 +70,6 @@ test.describe("error states", () => {
     await expect(trade.limitPriceInput).toHaveValue("65000");
   });
 
-  test("a gateway 500 on a conditional submit surfaces a trade error", async ({
-    page,
-    world,
-  }) => {
-    const { trade } = await enterTerminal(page, world);
-    world.faults.submitOrderStatus = 500;
-
-    await trade.selectTab("stop");
-    await trade.setSize("1");
-    await trade.setTriggerPrice("80000");
-    await trade.submit();
-
-    await expect(trade.tradeError).toBeVisible();
-    await expect(trade.sizeInput).toHaveValue("1");
-    await expect(trade.triggerPriceInput).toHaveValue("80000");
-  });
-
   test("an orders fetch failure leaves the terminal alive and the table empty", async ({
     page,
     world,

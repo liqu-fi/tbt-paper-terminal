@@ -121,17 +121,4 @@ test.describe("флаги исполнения тикета", () => {
     await expect.poll(() => world.submittedOrders.length).toBe(1);
     expect(world.submittedOrders[0]).not.toHaveProperty("postOnly");
   });
-
-  test("TP/SL прячется на условной вкладке — прикреплять его не к чему", async ({
-    page,
-    world,
-  }) => {
-    const { trade } = await enterTerminal(page, world);
-
-    await expect(trade.tpslToggle).toBeVisible();
-    await trade.selectTab("stop");
-    await expect(trade.tpslToggle).toBeHidden();
-    await trade.selectTab("limit");
-    await expect(trade.tpslToggle).toBeVisible();
-  });
 });

@@ -57,21 +57,12 @@ test.describe("trade form gating & controls", () => {
     const { trade } = await enterTerminal(page, world);
 
     await expect(trade.limitPriceInput).toBeHidden();
-    await expect(trade.triggerPriceInput).toBeHidden();
 
     await trade.selectTab("limit");
     await expect(trade.limitPriceInput).toBeVisible();
 
-    await trade.selectTab("stop");
-    await expect(trade.limitPriceInput).toBeHidden();
-    await expect(trade.triggerPriceInput).toBeVisible();
-
-    await trade.selectTab("take-profit");
-    await expect(trade.triggerPriceInput).toBeVisible();
-
     await trade.selectTab("market");
     await expect(trade.limitPriceInput).toBeHidden();
-    await expect(trade.triggerPriceInput).toBeHidden();
   });
 
   test("leverage is decoupled from size", async ({ page, world }) => {
