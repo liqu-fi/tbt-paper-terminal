@@ -1,20 +1,19 @@
-import {
-  useAccountQuery,
-  useCreateAccountMutation,
-  useGatewayAuthMutation,
-  useSessionStage,
-} from "@liq/react";
-import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
-import { type ReactNode, useEffect } from "react";
-import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
+import { useSessionStage } from "@liq/react";
+import type { ReactNode } from "react";
+import { useAccount, useSwitchChain } from "wagmi";
 
 import { megaethTestnet } from "../../config/chain";
 import { turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
+import { ErrorLine } from "./SessionCta";
 import { SignInPanel } from "./SignInPanel";
 import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 
-/** Renders children only when the session is `ready`; otherwise shows the next CTA. */
+/**
+ * Показывает терминал, как только кошелёк подключён к верной сети и список
+ * аккаунтов прочитан. Создание аккаунта и вход в шлюз — не гейт, а шаг в
+ * подвале тикета (`SessionCta`): стакан, чарт и Faucet видны и до них.
+ */
 export function SessionGate({ children }: { children: ReactNode }) {
   // Ветка стоит на константе времени сборки, а не на условии: `useTurnkeyIdentity()`
   // внутри `TurnkeyBootGate` бросает вне своего провайдера, и правило хуков требует,
@@ -49,42 +48,8 @@ function TurnkeyBootGate({ children }: { children: ReactNode }) {
 }
 
 function SessionGateInner({ children }: { children: ReactNode }) {
-  // Саму ступень вычисляет useSessionStage(); здесь accountId остаётся
-  // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
-  const { data: accountIds } = useAccountQuery();
-  const accountId = accountIds?.[0];
-
-  // Detect a wallet on the wrong network via the CONNECTOR's chain
-  // (`useAccount().chainId`), NOT `useChainId()`: the latter returns the wagmi
-  // config's chain (6343) even while the wallet sits on an unconfigured chain,
-  // so it can't see the mismatch. On a mismatched chain wagmi builds no
-  // walletClient, so every on-chain write (createAccount) and the SIWE sign-in
-  // fail with "walletClient is required" / "Wallet not connected".
   const account = useAccount();
-  const wrongChain = account.isConnected && account.chainId !== megaethTestnet.id;
   const switchChain = useSwitchChain();
-
-  const createAccount = useCreateAccountMutation();
-  const auth = useGatewayAuthMutation();
-
-  // After a wrong-chain → correct-chain transition, wagmi's walletClient query
-  // may hold a cached ConnectorChainMismatchError from when the wallet was on
-  // the wrong chain. staleTime: Infinity prevents an automatic re-fetch, so we
-  // force one here whenever the query is in error state and we're on the right
-  // chain. This ensures the sign-in button is not silently broken post-switch.
-  // Destructure so the effect depends on these fields, not the whole query
-  // object (whose identity changes every render) — keeps exhaustive-deps happy
-  // and the effect from re-running needlessly.
-  const {
-    data: walletClientData,
-    isError: walletClientErrored,
-    refetch: refetchWalletClient,
-  } = useWalletClient();
-  useEffect(() => {
-    if (!wrongChain && walletClientErrored) {
-      void refetchWalletClient();
-    }
-  }, [wrongChain, walletClientErrored, refetchWalletClient]);
 
   const stage = useSessionStage();
 
@@ -130,45 +95,8 @@ function SessionGateInner({ children }: { children: ReactNode }) {
       </Centered>
     );
   }
-  if (stage === "no-account") {
-    return (
-      <Centered testid="session-no-account">
-        <p className="text-muted">No SNX account yet.</p>
-        <Button
-          disabled={createAccount.isPending}
-          onClick={() => createAccount.mutate(undefined)}
-          data-testid="create-account-button"
-        >
-          {createAccount.isPending ? "Creating…" : "Create Account"}
-        </Button>
-        <ErrorLine
-          error={createAccount.error}
-          testid="create-account-error"
-          formatMessage={(error) => createAccountErrorMessage(error, account.address)}
-        />
-      </Centered>
-    );
-  }
-  if (stage === "needs-signin") {
-    return (
-      <Centered testid="session-needs-signin">
-        <p className="text-muted">Sign in to the gateway (SIWE).</p>
-        <Button
-          disabled={
-            auth.isPending || accountId === undefined || !walletClientData
-          }
-          onClick={() => accountId !== undefined && auth.mutate({ accountId })}
-          data-testid="signin-button"
-        >
-          {auth.isPending ? "Signing…" : "Sign In"}
-        </Button>
-        <ErrorLine error={auth.error} testid="signin-error" />
-      </Centered>
-    );
-  }
-  // Authenticated/ready: render the app. Пилюля 1-click живёт в шапке
-  // приложения (`SessionToolbar`) — своя строка над терминалом стоила 36px
-  // высоты ради одной кнопки; гейт по аутентификации переехал туда вместе с ней.
+  // no-account / needs-signin / ready: терминал на экране, следующий шаг
+  // онбординга рисует тикет на месте Buy / Sell (`SessionCta`).
   return <>{children}</>;
 }
 
@@ -186,39 +114,5 @@ function Centered({
     >
       {children}
     </div>
-  );
-}
-
-/**
- * Что показать вместо сырого `error.message` при отказе создания аккаунта.
- *
- * @remarks
- * Встроенный кошелёк создаётся пустым, и первая ончейн-запись без ETH иначе
- * объясняется сырым текстом реверта viem — пользователь смотрит на
- * "execution reverted" и не понимает, что ему нужно прислать ETH. Остальные
- * отказы (не про газ) показываются как есть — `isInsufficientGas` целится
- * только в нехватку средств на комиссию.
- */
-function createAccountErrorMessage(error: Error, address: string | undefined): string {
-  if (!isInsufficientGas(error)) return error.message;
-  return `${INSUFFICIENT_GAS_MESSAGE} Send ETH to ${address ?? "your wallet"} and try again.`;
-}
-
-/** Surfaces a mutation error inline so a failed CTA isn't a silent dead-end. */
-function ErrorLine({
-  error,
-  testid,
-  formatMessage,
-}: {
-  error: Error | null;
-  testid: string;
-  /** Переопределяет `error.message` — например, чтобы humanize'ить конкретную причину. */
-  formatMessage?: (error: Error) => string;
-}) {
-  if (!error) return null;
-  return (
-    <p className="text-sm text-short" role="alert" data-testid={testid}>
-      {formatMessage ? formatMessage(error) : error.message}
-    </p>
   );
 }

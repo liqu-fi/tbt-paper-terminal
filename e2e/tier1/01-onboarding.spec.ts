@@ -21,8 +21,12 @@ test.describe("boot + onboarding", () => {
     const app = new AppPage(page);
     await app.goto();
     await app.connect();
+    // The CTA sits in the ticket footer: the terminal itself is already on
+    // screen (book, chart, Faucet), only Buy / Sell are withheld.
+    await expect(app.terminal).toBeVisible();
     await expect(app.noAccountGate).toBeVisible();
     await expect(app.createAccountButton).toBeVisible();
+    await expect(app.tradeReady).toBeHidden();
   });
 
   test("connect → sign-in lands in the terminal (existing BOOK account)", async ({
@@ -106,7 +110,7 @@ test.describe("boot + onboarding", () => {
     // Gateway rejects the SIWE verify: the app must NOT advance into the terminal.
     world.faults.authVerifyStatus = 401;
     await app.signinButton.click();
-    await expect(app.terminal).toBeHidden();
+    await expect(app.tradeReady).toBeHidden();
     await expect(app.needsSigninGate).toBeVisible();
     // Barrier: wait until the rejected verify has actually landed. This proves
     // the first attempt fully failed and leaves NO request in flight. Without it
@@ -125,7 +129,7 @@ test.describe("boot + onboarding", () => {
     // not a silent dead-end or a silent advance.
     delete world.faults.authVerifyStatus;
     await app.signinButton.click();
-    await expect(app.terminal).toBeVisible();
+    await expect(app.tradeReady).toBeVisible();
     expect(world.authVerifyRequests).toHaveLength(1);
   });
 
@@ -139,8 +143,9 @@ test.describe("boot + onboarding", () => {
     await app.goto();
     await app.connect();
 
-    // Gated: neither create-account nor sign-in is reachable on the wrong chain.
+    // Gated: neither the terminal nor its sign-in CTA is reachable on the wrong chain.
     await expect(app.wrongChainGate).toBeVisible();
+    await expect(app.terminal).toBeHidden();
     await expect(app.needsSigninGate).toBeHidden();
 
     // Switching chains advances to the SIWE step (the account exists), then

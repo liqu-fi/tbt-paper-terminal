@@ -49,7 +49,7 @@ test.describe("live: turnkey session keys", () => {
     // state a returning user is actually in (and it sidesteps the same-document
     // propagation gap Tier 1 pins down).
     await page.reload();
-    await expect(app.terminal).toBeVisible({ timeout: 60_000 });
+    await expect(app.tradeReady).toBeVisible({ timeout: 60_000 });
     await expect(sessionKey.statusDot).toHaveClass(/bg-long/);
 
     // A real order signed inside the enclave — this is the assertion that would
