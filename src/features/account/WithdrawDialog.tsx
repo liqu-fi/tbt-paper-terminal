@@ -1,22 +1,16 @@
-import { getChainConfig, Margin } from "@liq/sdk";
+import { Margin } from "@liq/sdk";
 import {
-  liqQueryKeys,
   useAccountId,
   useAvailableMarginQuery,
+  useCollateralAmountQuery,
   useLiqOnchain,
   useNetworkId,
   useTransactionMutation,
-  useWallet,
 } from "@liq/react";
-import { formatUsd, wadToFixed } from "@liq/core";
+import { formatUsd, getChainConfig, getCollaterals, wadToFixed } from "@liq/core";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  decodeFunctionData,
-  encodeFunctionData,
-  type Hex,
-  parseAbi,
-} from "viem";
+import type { Hex } from "viem";
 import { usePublicClient, useWalletClient } from "wagmi";
 
 import { Button } from "@/components/ui/button";
@@ -28,32 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-
-/**
- * Снятие и разворот в одной транзакции — через TrustedMulticallForwarder,
- * тем же `aggregate3`, которым SDK сам батчит `payDebt + modifyCollateral`
- * (RepayBuilder) и `withdraw + unwrap` для LP (LpWithdrawBuilder): оба целевых
- * прокси доверяют форвардеру по ERC-2771, и внутри батча `_msgSender()` —
- * владелец аккаунта. `requireSuccess: true` на каждом вызове: откат любого
- * шага откатывает всё, sUSDC на кошельке не повисает.
- *
- * ABI набраны вручную, потому что `@liq/sdk` не реэкспортирует ни
- * `trustedMulticallForwarderAbi`, ни `spotMarketProxyAbi` из liq-onchain.
- */
-const FORWARDER_ABI = parseAbi([
-  "function aggregate3((address target, bool requireSuccess, bytes callData)[] calls)",
-]);
-const PERPS_ABI = parseAbi([
-  "function modifyCollateral(uint128 accountId, uint128 collateralId, int256 amountDelta)",
-]);
-/** sUSDC → USDC на SpotMarketProxy; синт сжигается у msg.sender, approve не нужен. */
-const UNWRAP_ABI = parseAbi([
-  "function unwrap(uint128 marketId, uint256 unwrapAmount, uint256 minAmountReceived)",
-]);
-/** WAD (18) → USDC (6): столько же и ждём на выходе, как считает SDK в LpWithdrawBuilder. */
-const WAD_TO_USDC = 10n ** 12n;
-
-type ForwarderCall = { target: `0x${string}`; requireSuccess: boolean; callData: Hex };
+import { CollateralTabs } from "./CollateralTabs";
 
 export function WithdrawDialog({
   open,
@@ -65,7 +34,6 @@ export function WithdrawDialog({
   const accountId = useAccountId();
   const onchain = useLiqOnchain();
   const networkId = useNetworkId();
-  const wallet = useWallet();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const { data: margins } = useAvailableMarginQuery();
@@ -76,12 +44,16 @@ export function WithdrawDialog({
   // откат — кнопка «мёртвая», маржа не менялась (e2e 03).
   const [txError, setTxError] = useState<Error | null>(null);
 
-  // sUSDC collateral lives under the chain's sUSDC synth-market id (staging = 1,
-  // prod = 3) — the same id DepositBuilder credits. Hardcoding 0 withdrew from an
-  // empty collateral slot and reverted on-chain (#459). Resolved via the SDK
-  // chain config (deploy env is wired through process.env.DEPLOY_ENV at build).
-  const chain = getChainConfig(networkId);
-  const susdcCollateralId = BigInt(chain.susdcMarketId);
+  // Те же токены, что принимает депозит; вывод отдаёт на кошелёк сам токен,
+  // а не синт (SDK разворачивает его в том же батче).
+  const collaterals = getCollaterals(getChainConfig(networkId));
+  const symbols = Object.keys(collaterals);
+  const [symbol, setSymbol] = useState(symbols[0]);
+  const { marketId, decimals } = collaterals[symbol];
+  // Сколько именно этого токена лежит на аккаунте: withdrawable — USD по всем
+  // коллатералам, и с двумя синтами MAX подставил бы сумму, которой в этом
+  // токене нет — контракт откатил бы без причины.
+  const { data: held } = useCollateralAmountQuery(BigInt(marketId));
 
   // Synthetix blocks ALL collateral withdrawals while the account carries debt
   // (closed-at-loss); a plain withdraw would revert. Read it so we can offer an
@@ -101,16 +73,20 @@ export function WithdrawDialog({
   // Потолок вывода. Без долга — withdrawable (≤ available; ниже при открытых
   // позициях). С долгом протокол отвечает withdrawable = 0, а repay снимает
   // этот запрет в той же транзакции, поэтому потолком служит available; если
-  // позиции его не отпустят, откажет сам контракт — ошибка ниже.
-  const limit = hasDebt ? margins?.available : margins?.withdrawable;
+  // позиции его не отпустят, откажет сам контракт — ошибка ниже. И то и другое
+  // режется остатком выбранного токена на аккаунте.
+  const marginLimit = hasDebt ? margins?.available : margins?.withdrawable;
+  const caps = [marginLimit, held].filter((x): x is bigint => x !== undefined);
+  const limit = caps.length ? caps.reduce((a, b) => (a < b ? a : b)) : undefined;
   const amountWad = parseOrZero(Margin.parse, amount);
   const exceedsLimit = limit !== undefined && amountWad > limit;
   const invalid = exceedsLimit;
 
-  // Одна транзакция на оба пути: снять sUSDC с аккаунта и тут же развернуть
-  // его в USDC — на кошелёк приходит тот же токен, который принимает депозит.
-  // С долгом батч строит SDK (`payDebt` снимает запрет на вывод внутри той же
-  // транзакции — RepayBuilder.thenWithdraw), а `unwrap` дописывается к нему.
+  // Одна транзакция: снять синт с аккаунта и тут же развернуть его в токен —
+  // батч собирает SDK (`WithdrawBuilder`). С долгом `payDebt` встаёт в голову
+  // того же батча (`afterRepay`), а approve под оплату долга с кошелька идут
+  // отдельными транзакциями: через форвардер approve не проходит (msg.sender —
+  // форвардер, а не владелец).
   const withdraw = useTransactionMutation<
     `0x${string}`,
     { accountId: bigint; amountWad: bigint }
@@ -126,63 +102,25 @@ export function WithdrawDialog({
           data,
         });
 
-      const unwrap: ForwarderCall = {
-        target: chain.contracts.SpotMarketProxy,
-        requireSuccess: true,
-        callData: encodeFunctionData({
-          abi: UNWRAP_ABI,
-          functionName: "unwrap",
-          args: [susdcCollateralId, amountWad, amountWad / WAD_TO_USDC],
-        }),
-      };
-
-      let calls: readonly ForwarderCall[];
+      const builder = onchain.deposit
+        .withdraw(symbol, amountWad)
+        .forAccount(accountId);
       if (hasDebt) {
-        const { approvals, tx } = onchain.deposit
-          .repay(debt!)
-          .forAccount(accountId)
-          .thenWithdraw(amountWad)
-          .build();
-        // Approve под оплату долга с кошелька — отдельными транзакциями, как
-        // делает useRepay: approve через форвардер не проходит (msg.sender —
-        // форвардер, а не владелец).
-        for (const approval of approvals) {
-          const receipt = await publicClient.waitForTransactionReceipt({
-            hash: await send(approval.to, approval.data),
-          });
-          if (receipt.status === "reverted") throw new Error("Approve reverted");
-        }
-        const { args } = decodeFunctionData({ abi: FORWARDER_ABI, data: tx.data });
-        calls = [...args[0], unwrap];
-      } else {
-        calls = [
-          {
-            target: chain.contracts.PerpsMarketProxy,
-            requireSuccess: true,
-            // modifyCollateral(accountId, collateralId, amountDelta); negative = withdraw.
-            callData: encodeFunctionData({
-              abi: PERPS_ABI,
-              functionName: "modifyCollateral",
-              args: [accountId, susdcCollateralId, -amountWad],
-            }),
-          },
-          unwrap,
-        ];
+        builder.afterRepay(onchain.deposit.repay(debt!).forAccount(accountId));
       }
-      return send(
-        chain.contracts.TrustedMulticallForwarder,
-        encodeFunctionData({ abi: FORWARDER_ABI, functionName: "aggregate3", args: [calls] }),
-      );
+      const { approvals, tx } = builder.build();
+      for (const approval of approvals) {
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash: await send(approval.to, approval.data),
+        });
+        if (receipt.status === "reverted") throw new Error("Approve reverted");
+      }
+      return send(tx.to, tx.data);
     },
-    invalidateKeys: wallet
-      ? [
-          { queryKey: liqQueryKeys.account.margin(networkId, wallet) },
-          { queryKey: debtKey },
-          // Вывод отдаёт USDC — баланс токена в диалоге депозита устарел.
-          // Триггер `withdrawn` в SDK никто не помечает, поэтому руками.
-          { queryKey: liqQueryKeys.balances.depositable(networkId, wallet, "USDC") },
-        ]
-      : [],
+    // Событие вместо списка ключей: маржа, остаток коллатерала и баланс
+    // кошелька протухают срезами SDK. У долга среза нет — его ключ свой.
+    stale: ["withdrawn"],
+    invalidateKeys: [{ queryKey: debtKey }],
     onTransactionSuccess: () => {
       setAmount("");
       onClose();
@@ -218,9 +156,19 @@ export function WithdrawDialog({
       >
         <DialogHeader className="mb-3">
           <DialogTitle className="text-sm font-semibold">
-            Withdraw USDC
+            Withdraw {symbol}
           </DialogTitle>
         </DialogHeader>
+        <CollateralTabs
+          symbols={symbols}
+          value={symbol}
+          onChange={(next) => {
+            setSymbol(next);
+            setAmount("");
+            setTxError(null);
+          }}
+          testIdPrefix="withdraw"
+        />
         {hasDebt && (
           <div
             className="mb-3 rounded border border-short/40 bg-short/10 p-2 text-[11px] text-short"
@@ -242,7 +190,7 @@ export function WithdrawDialog({
         <DecimalInput
           value={amount}
           onValueChange={setAmount}
-          maxDecimals={6}
+          maxDecimals={decimals}
           invalid={invalid}
           placeholder="100"
           data-testid="withdraw-amount-input"

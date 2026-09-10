@@ -142,6 +142,12 @@ function computeRead(
       const account = findAccount(world, args[0] as bigint);
       return [account?.withdrawable ?? 0n];
     }
+    case "getCollateralAmount": {
+      // Мир держит одну корзину маржи на аккаунт, не по коллатералам: любой
+      // id отвечает всем available, и потолок по токену совпадает с маржой.
+      const held = findAccount(world, args[0] as bigint)?.available ?? 0n;
+      return [held > 0n ? held : 0n];
+    }
     case "debt": {
       const account = findAccount(world, args[0] as bigint);
       return [account?.debt ?? 0n];

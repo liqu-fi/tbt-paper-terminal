@@ -78,6 +78,24 @@ test.describe("deposit & withdraw", () => {
     expect(world.lastCollateralId).toBe(1n);
   });
 
+  test("withdrawing USDm debits margin under its own collateral id", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world); // $5,000
+
+    await market.openWithdraw();
+    await withdraw.token("USDm").click();
+    await expect(withdraw.root).toContainText("Withdraw USDm");
+    await withdraw.withdraw("100");
+
+    await expect(withdraw.root).toBeHidden();
+    await expect(market.margin).toHaveText(/\$4,900\.00/);
+    expect(world.lastCollateralDelta).toBe(-Margin.parse("100"));
+    // …under USDm's spot market (2 on staging), not the sUSDC slot.
+    expect(world.lastCollateralId).toBe(2n);
+  });
+
   test("a reverted withdraw surfaces an error and leaves margin unchanged", async ({
     page,
     world,

@@ -429,6 +429,11 @@ export class WithdrawDialog {
     this.validation = page.getByTestId("withdraw-validation");
   }
 
+  /** Вкладка токена (USDC | USDm); есть только когда у контура больше одного. */
+  token(symbol: string): Locator {
+    return this.root.getByTestId(`withdraw-token-${symbol}`);
+  }
+
   async withdraw(amount: string): Promise<void> {
     await this.amountInput.fill(amount);
     await this.submitButton.click();

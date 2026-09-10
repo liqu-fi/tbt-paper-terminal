@@ -15,9 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
+import { CollateralTabs } from "./CollateralTabs";
 
 export function DepositDialog({
   open,
@@ -31,7 +31,7 @@ export function DepositDialog({
   const deposit = useDepositMutation();
   const [amount, setAmount] = useState("");
   // Депозитные токены контура из конфига SDK: на prod один USDC, на staging
-  // ещё USDm. Переключатель рисуется только когда есть из чего выбирать.
+  // ещё USDm.
   const collaterals = getCollaterals(getChainConfig(networkId));
   const symbols = Object.keys(collaterals);
   const [symbol, setSymbol] = useState(symbols[0]);
@@ -85,29 +85,15 @@ export function DepositDialog({
             Deposit {symbol}
           </DialogTitle>
         </DialogHeader>
-        {symbols.length > 1 && (
-          <Tabs
-            value={symbol}
-            onValueChange={(next) => {
-              setSymbol(next);
-              setAmount("");
-            }}
-            className="mb-2"
-          >
-            <TabsList className="h-7 w-full">
-              {symbols.map((s) => (
-                <TabsTrigger
-                  key={s}
-                  value={s}
-                  className="text-xs"
-                  data-testid={`deposit-token-${s}`}
-                >
-                  {s}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        )}
+        <CollateralTabs
+          symbols={symbols}
+          value={symbol}
+          onChange={(next) => {
+            setSymbol(next);
+            setAmount("");
+          }}
+          testIdPrefix="deposit"
+        />
         {balance !== undefined && (
           <div className="mb-1 flex justify-between text-[11px] text-muted">
             <span>Wallet balance</span>
