@@ -5,14 +5,15 @@ import { expect, test } from "../support/fixtures";
 import { longPositionFixture, readyWorld } from "../support/world";
 
 test.describe("панель Account", () => {
-  test("шесть строк макета на месте", async ({ page, world }) => {
+  test("пять строк макета на месте", async ({ page, world }) => {
     await enterTerminal(page, world);
     const account = new AccountPanelPage(page);
 
+    // Стоимости счёта на карточке нет с #50 — то же число стоит в шапке
+    // рынка как `margin`; Deposit / Withdraw тоже переехали в шапку.
     await expect(account.root).toBeVisible();
     for (const name of [
       "unrealized-pnl",
-      "value",
       "equity",
       "borrowed",
       "exposure",
@@ -57,16 +58,5 @@ test.describe("панель Account", () => {
     // +$100 из фикстуры позиции; экспозиция = 1 BTC × mark 70 000.
     await expect(account.row("unrealized-pnl")).toHaveText("+$100.00");
     await expect(account.row("exposure")).toHaveText("$70,000.00");
-  });
-
-  test("кнопка Deposit панели открывает тот же диалог", async ({
-    page,
-    world,
-  }) => {
-    await enterTerminal(page, world);
-    const account = new AccountPanelPage(page);
-
-    await account.depositButton.click();
-    await expect(page.getByTestId("deposit-dialog")).toBeVisible();
   });
 });
