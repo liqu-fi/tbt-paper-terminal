@@ -16,6 +16,8 @@ export class AppPage {
   readonly brand: Locator;
   readonly connectButton: Locator;
   readonly walletAddressButton: Locator;
+  readonly walletCopyButton: Locator;
+  readonly signOutButton: Locator;
   readonly disconnectedGate: Locator;
   readonly loadingGate: Locator;
   readonly noAccountGate: Locator;
@@ -39,6 +41,8 @@ export class AppPage {
     this.brand = page.getByTestId("app-brand");
     this.connectButton = page.getByTestId("connect-wallet-button");
     this.walletAddressButton = page.getByTestId("wallet-address-button");
+    this.walletCopyButton = page.getByTestId("wallet-copy-button");
+    this.signOutButton = page.getByTestId("wallet-signout-button");
     this.disconnectedGate = page.getByTestId("session-disconnected");
     this.loadingGate = page.getByTestId("session-loading");
     this.noAccountGate = page.getByTestId("session-no-account");
@@ -56,6 +60,12 @@ export class AppPage {
 
   goto(): Promise<unknown> {
     return this.page.goto("/");
+  }
+
+  /** Address pill → menu → Log out. */
+  async signOut(): Promise<void> {
+    await this.walletAddressButton.click();
+    await this.signOutButton.click();
   }
 
   /** Click Connect (header + gate share the testid; either connects wagmi). */
