@@ -1,11 +1,23 @@
 import { truncateAddress } from "@liq/core";
 import { useLiqSignOut, useTurnkey } from "@liq/react";
+import { Check, Copy, LogOut } from "lucide-react";
+import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { e2eWallet, turnkeyLoginEnabled } from "../../config/env";
 
-/** Разметка кнопки адреса. Что делает клик — решают две обёртки ниже. */
+/**
+ * Адрес в шапке открывает меню: скопировать полный адрес или выйти. Клик по
+ * самому адресу раньше сразу отключал кошелёк — выход без подтверждения и без
+ * способа узнать полный адрес. Что делает выход — решают две обёртки ниже.
+ */
 function AddressButton({
   address,
   onSignOut,
@@ -13,15 +25,39 @@ function AddressButton({
   address: string;
   onSignOut: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
   return (
-    <button
-      onClick={onSignOut}
-      className="rounded-[var(--radius-sm)] border border-border bg-surface-2 px-3 py-2 font-mono text-xs text-text"
-      title="Disconnect"
-      data-testid="wallet-address-button"
-    >
-      {truncateAddress(address)}
-    </button>
+    <DropdownMenu onOpenChange={(open) => !open && setCopied(false)}>
+      <DropdownMenuTrigger
+        className="rounded-[var(--radius-sm)] border border-border bg-surface-2 px-3 py-2 font-mono text-xs text-text hover:bg-surface"
+        data-testid="wallet-address-button"
+      >
+        {truncateAddress(address)}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {/* preventDefault: меню остаётся открытым, чтобы показать «Copied». */}
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            void navigator.clipboard
+              .writeText(address)
+              .then(() => setCopied(true));
+          }}
+          data-testid="wallet-copy-button"
+        >
+          {copied ? <Check /> : <Copy />}
+          {copied ? "Copied" : "Copy address"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={onSignOut}
+          data-testid="wallet-signout-button"
+        >
+          <LogOut />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -72,7 +108,7 @@ function E2eConnectButton() {
 }
 
 /**
- * Адрес с выходом, пока подключены; до подключения — ничего: дверь Turnkey
+ * Меню адреса, пока подключены; до подключения — ничего: дверь Turnkey
  * живёт в `SignInPanel`. Только под `VITE_E2E_WALLET` до подключения рисуется
  * кнопка e2e-кошелька — hermetic e2e входит ею и из шапки, и из гейта.
  */
