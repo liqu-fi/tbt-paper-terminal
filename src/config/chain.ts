@@ -1,3 +1,4 @@
+import { getViemChain } from "@liq/sdk";
 import { turnkeyConnector } from "@liq/turnkey";
 import { defineChain } from "viem";
 import { createConfig, http, type Config } from "wagmi";
@@ -5,21 +6,14 @@ import { injected } from "wagmi/connectors";
 
 import { e2eWallet, env } from "./env";
 
+const sdkChain = getViemChain(6343);
+
+/** Сеть целиком из SDK; подменяется только RPC — hermetic e2e перехватывает свой origin. */
 export const megaethTestnet = defineChain({
-  id: 6343,
-  name: "MegaETH Testnet",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: [env.rpcUrl] } },
-  blockExplorers: {
-    default: {
-      name: "Blockscout",
-      url: "https://megaeth-testnet-v2.blockscout.com",
-    },
+  ...sdkChain,
+  rpcUrls: {
+    default: { http: [env.rpcUrl ?? sdkChain.rpcUrls.default.http[0]] },
   },
-  contracts: {
-    multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
-  },
-  testnet: true,
 });
 
 /**
@@ -49,6 +43,6 @@ export function getConfig(): Config {
     chains: [megaethTestnet],
     connectors: e2eWallet ? [injected()] : [turnkeyConnector()],
     multiInjectedProviderDiscovery: false,
-    transports: { [megaethTestnet.id]: http(env.rpcUrl) },
+    transports: { [megaethTestnet.id]: http() },
   });
 }

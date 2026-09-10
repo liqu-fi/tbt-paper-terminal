@@ -1,5 +1,5 @@
 /** Почему сейчас нельзя нажать Claim — или `null`, если можно. */
-export type FaucetBlock = "disabled" | "empty" | "cooldown";
+type FaucetBlock = "disabled" | "empty" | "cooldown";
 
 /**
  * Состояние одной строки фаусета из ончейн-снимка.

@@ -28,6 +28,6 @@ test.describe("disconnect", () => {
     // The gateway token persists across a disconnect, so reconnecting the same
     // wallet lands straight back in the terminal (no second SIWE).
     await app.connect();
-    await expect(app.terminal).toBeVisible();
+    await expect(app.tradeReady).toBeVisible();
   });
 });

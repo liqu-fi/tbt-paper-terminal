@@ -2,7 +2,6 @@ import {
   AUTHED_QUERY_PREFIXES,
   AuthState,
   useGatewayStore,
-  useSessionStage,
   useTurnkey,
 } from "@liq/react";
 import {
@@ -26,17 +25,16 @@ import { useAccount, useConnect, useReconnect } from "wagmi";
 
 import { megaethTestnet } from "../../config/chain";
 import { env } from "../../config/env";
-import { requestGasGrant } from "../wallet/gasGrant";
 import { identityResetReason } from "./identityReset";
 
 /** Куда дошло разрешение встроенного кошелька — для тех, кто это показывает. */
-export type EmbeddedWalletState =
+type EmbeddedWalletState =
   | { kind: "idle" }
   | { kind: "resolving" }
   | { kind: "ready"; address: `0x${string}` }
   | { kind: "failed"; error: unknown };
 
-export type TurnkeyIdentityValue = {
+type TurnkeyIdentityValue = {
   /** subOrgId текущей личности; `null`, пока не вошли. */
   subOrgId: string | null;
   embedded: EmbeddedWalletState;
@@ -58,11 +56,11 @@ export function useTurnkeyIdentity(): TurnkeyIdentityValue {
 }
 
 /**
- * Личность за дверью Turnkey: подписант → wagmi → газ.
+ * Личность за дверью Turnkey: подписант → wagmi.
  *
  * @remarks
- * Три шага — три однократных обращения на личность, и все гарантии, которых
- * они требуют, даёт ключ кэша react-query, а не собственный механизм:
+ * Каждый шаг — одно обращение на личность, и все гарантии, которых они
+ * требуют, даёт ключ кэша react-query, а не собственный механизм:
  *
  * - «не более одного разрешения кошелька на суб-организацию» — это дедупликация
  *   по `queryKey` плюс `staleTime: Infinity`. Гарантия несущая:
@@ -86,7 +84,6 @@ export function useTurnkeyIdentity(): TurnkeyIdentityValue {
  */
 export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
   const { authState, session } = useTurnkey();
-  const stage = useSessionStage();
   const wagmiAccount = useAccount();
   const token = useGatewayStore((s) => s.token);
   const queryClient = useQueryClient();
@@ -155,7 +152,7 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
       createEmbeddedProvider({
         account,
         chain: megaethTestnet,
-        rpcUrl: env.rpcUrl,
+        rpcUrl: megaethTestnet.rpcUrls.default.http[0],
       }),
     );
   }, [authState, account]);
@@ -196,29 +193,6 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
     connect,
     reconnect,
   ]);
-
-  // Шаг 4. Газ от шлюза — до первой ончейн-записи, потому что встроенный
-  // кошелёк создаётся пустым. Отказ в доливе — обычный ответ вернувшемуся
-  // пользователю, поэтому `requestGasGrant` не бросает, а исход не
-  // останавливает вход.
-  useQuery({
-    queryKey: ["turnkey-gas-grant", subOrgId, address],
-    queryFn: () =>
-      requestGasGrant({
-        gatewayUrl: env.gatewayUrl,
-        address: address!,
-        subOrgId: subOrgId!,
-        signMessage: ({ message }) => account!.signMessage({ message }),
-      }),
-    enabled:
-      subOrgId !== null &&
-      account !== undefined &&
-      address !== undefined &&
-      stage === "no-account",
-    staleTime: Infinity,
-    gcTime: Infinity,
-    retry: false,
-  });
 
   const value = useMemo<TurnkeyIdentityValue>(() => {
     const embeddedView: EmbeddedWalletState =

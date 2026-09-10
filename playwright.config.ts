@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { GATEWAY_URL, RPC_URL } from "./e2e/support/constants";
+
 /**
  * Tier 1 — hermetic e2e. The dev server is launched with fixed fake gateway /
  * RPC origins so the in-process mocks (see e2e/support/*) capture every request;
@@ -15,10 +17,9 @@ const PORT = Number(process.env.E2E_PORT) || 5173;
 // Inline env wins over any inherited process.env in Vite's loadEnv, so these
 // origins are deterministic regardless of the surrounding shell / CI.
 const E2E_ENV = [
-  "VITE_GATEWAY_URL=https://gateway.e2e.local/v1",
-  "VITE_RPC_URL=https://rpc.e2e.local",
+  `VITE_GATEWAY_URL=${GATEWAY_URL}`,
+  `VITE_RPC_URL=${RPC_URL}`,
   "VITE_DEPLOY_ENV=staging",
-  "VITE_CHAIN_ID=6343",
   "VITE_WALLETCONNECT_PROJECT_ID=",
   // Единственная дверь продукта — Turnkey; hermetic-тесты входят кошельком,
   // который ставит e2e/support/injectedWallet.ts (см. src/config/env.ts).

@@ -1,3 +1,4 @@
+import { formatUsd } from "@liq/core";
 import {
   Select,
   SelectContent,
@@ -6,7 +7,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { fmtUsd } from "../../lib/format";
 import type { SizeUnit } from "./useOrderSizing";
 
 /**
@@ -87,7 +87,7 @@ export function QuantityField({
         data-testid="size-quote-value"
       >
         {/* `fmtUsd` уже ставит `$` — второй раз называть единицу нечем и незачем. */}
-        {notional > 0n ? `≈ ${fmtUsd(notional)}` : ""}
+        {notional > 0n ? `≈ ${formatUsd(notional)}` : ""}
       </div>
     </div>
   );

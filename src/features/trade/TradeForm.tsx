@@ -10,14 +10,17 @@ import {
   useAccountId,
   useAvailableMarginQuery,
   useOrderSubmission,
+  useSessionStage,
   useTradeStore,
 } from "@liq/react";
+import { sanitizeDecimal } from "@liq/core";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { sanitizeDecimal } from "../../lib/decimal";
+import { parseOrZero } from "../../lib/format";
+import { SessionCta } from "../auth/SessionCta";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { EntryTpSlFields } from "./EntryTpSlFields";
 import { ExecutionFlags } from "./ExecutionFlags";
@@ -49,6 +52,7 @@ const LIMIT_PRICE_DECIMALS = 2;
 export function TradeForm() {
   const { marketId, market } = useSelectedMarket();
   const accountId = useAccountId();
+  const stage = useSessionStage();
   const markPrice = useMarkPrice();
   const mid = useBookMid();
   const { data: margins } = useAvailableMarginQuery();
@@ -106,11 +110,7 @@ export function TradeForm() {
   // The active tab's price field, parsed (0n = blank/unparseable).
   function parsedTabPrice(): bigint {
     if (tab === "Market") return markPrice;
-    try {
-      return Price.parse(limitPrice);
-    } catch {
-      return 0n;
-    }
+    return parseOrZero(Price.parse, limitPrice);
   }
   const tabPriceReady = parsedTabPrice() > 0n;
 
@@ -135,13 +135,7 @@ export function TradeForm() {
       orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET",
       above: boolean,
     ) => {
-      if (!raw) return;
-      let triggerPrice: bigint;
-      try {
-        triggerPrice = Price.parse(raw);
-      } catch {
-        return;
-      }
+      const triggerPrice = parseOrZero(Price.parse, raw);
       if (triggerPrice <= 0n) return;
       submitAttached.mutate({
         kind: "conditional",
@@ -252,7 +246,7 @@ export function TradeForm() {
                 <TabsTrigger
                   key={t}
                   value={t}
-                  data-testid={`trade-tab-${tabSlug(t)}`}
+                  data-testid={`trade-tab-${t.toLowerCase()}`}
                 >
                   {t}
                 </TabsTrigger>
@@ -338,18 +332,25 @@ export function TradeForm() {
           </p>
         )}
 
-        <SubmitButtons
-          onSubmit={submit}
-          disabled={disabled}
-          pending={pending}
-        />
+        {/* Место кнопок подачи — и место следующего шага онбординга: пока
+            аккаунта или входа в шлюз нет, торговать нечем, и здесь стоит
+            «Create Account» / «Sign In» вместо неактивных Buy / Sell. */}
+        {stage === "no-account" || stage === "needs-signin" ? (
+          <SessionCta stage={stage} />
+        ) : (
+          <SubmitButtons
+            onSubmit={submit}
+            disabled={disabled}
+            pending={pending}
+          />
+        )}
 
         {sizing.validation.warn && !insufficientMargin && (
           <p className="text-[10px] text-short/80" data-testid="order-warning">
             {describeWarning(sizing.validation.warn)}
           </p>
         )}
-        {insufficientMargin && (
+        {insufficientMargin && stage === "ready" && (
           <p
             className="text-[10px] text-muted"
             data-testid="insufficient-margin"
@@ -365,13 +366,4 @@ export function TradeForm() {
       </div>
     </div>
   );
-}
-
-const TAB_SLUG: Record<Tab, string> = {
-  Market: "market",
-  Limit: "limit",
-};
-
-function tabSlug(tab: Tab): string {
-  return TAB_SLUG[tab];
 }

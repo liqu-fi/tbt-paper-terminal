@@ -1,8 +1,8 @@
 import { useMarketChannel, useTradesRestQuery } from "@liq/react";
 import type { ListTradesQuery, TradeEventData, TradeRow } from "@liq/sdk";
+import { parseWadLoose } from "@liq/core";
 import { useState } from "react";
 
-import { parseWadLoose } from "@/lib/format";
 
 /** Сколько строк держит лента — и REST-страница, и живой буфер. */
 export const TAPE_LIMIT = 50;
@@ -117,7 +117,7 @@ export function freshLiveRows(
   return live.filter((row) => row.timestamp > boundary);
 }
 
-export interface UseTradesTapeResult {
+interface UseTradesTapeResult {
   rows: TapeRow[];
   isLoading: boolean;
 }
@@ -129,7 +129,7 @@ export interface UseTradesTapeResult {
  * `TAPE_LIMIT`, и после переполнения длина перестала бы расти, а ключи —
  * различаться.
  */
-export interface LiveBuffer {
+interface LiveBuffer {
   rows: TapeRow[];
   seq: number;
 }

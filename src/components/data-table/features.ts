@@ -31,8 +31,6 @@ export const features = tableFeatures({
   sortFns,
 });
 
-export type Features = typeof features;
-
 /**
  * Общий предикат фильтра по рынку.
  *

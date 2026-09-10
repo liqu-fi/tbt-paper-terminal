@@ -13,12 +13,12 @@ import { useSelectedMarket } from "../market/useSelectedMarket";
 const WAD = 10n ** 18n;
 
 /** Ровно то, что панели нужно знать о позиции. */
-export interface SummaryPosition {
+interface SummaryPosition {
   unrealizedPnl: bigint;
   notional: bigint;
 }
 
-export interface SummaryInput {
+interface SummaryInput {
   /** `getAvailableMargin` — залог, переоценённый по марку. `undefined` = не прочитано. */
   available: bigint | undefined;
   /** Офчейн-лок под неурегулированные филлы. */
@@ -27,7 +27,7 @@ export interface SummaryInput {
   positions: SummaryPosition[];
 }
 
-export interface AccountSummary {
+interface AccountSummary {
   unrealizedPnl: bigint;
   accountValue: bigint | undefined;
   equity: bigint | undefined;

@@ -1,11 +1,12 @@
 import type { SettlementLedgerRow } from "@liq/api-client";
+import { truncateAddress } from "@liq/core";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useMemo } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
 
-import { DASH, fmtHash, fmtSignedUsd, fmtTime } from "../../lib/format";
+import { DASH, fmtSignedUsd, fmtTime } from "../../lib/format";
 import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 import { fundingRows, useAccountLedger } from "./useAccountLedger";
 
@@ -59,7 +60,7 @@ const columns = helper.columns([
     id: "tx",
     header: "Tx",
     cell: (info) => (
-      <span className="text-muted">{fmtHash(info.getValue())}</span>
+      <span className="text-muted">{truncateAddress(info.getValue())}</span>
     ),
   }),
 ]);

@@ -1,7 +1,7 @@
 /** Page Object for the session-key (1-click trading) header pill and modal. */
 import { type Locator, type Page } from "@playwright/test";
 
-export type SessionDuration = 1 | 7 | 30;
+type SessionDuration = 1 | 7 | 30;
 
 export class SessionKeyPanel {
   readonly button: Locator;

@@ -4,6 +4,7 @@ import {
   useCancelOrdersMutation,
   useOrderSubmission,
 } from "@liq/react";
+import { wadToFixed } from "@liq/core";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,20 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { wadToFixed } from "../../lib/format";
 import { tpslPlan } from "./tpslPlan";
 import type { PositionRow } from "./usePositionRows";
-
-/** Цена из поля; пустое или неразборчивое — `0n`, то есть «снять». */
-function parsePrice(raw: string): bigint {
-  if (!raw.trim()) return 0n;
-  try {
-    return Price.parse(raw);
-  } catch {
-    return 0n;
-  }
-}
 
 /**
  * Правка скобок одной позиции.
@@ -69,8 +60,9 @@ export function TpSlDialog({
     const plan = tpslPlan({
       position: row.position,
       brackets: row.brackets,
-      takeProfit: parsePrice(tp),
-      stopLoss: parsePrice(sl),
+      // Пустое поле — `0n`, то есть «снять».
+      takeProfit: parseOrZero(Price.parse, tp),
+      stopLoss: parseOrZero(Price.parse, sl),
     });
     if (plan.cancel.length === 0 && plan.submit.length === 0) {
       onClose();

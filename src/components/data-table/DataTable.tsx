@@ -28,7 +28,7 @@ import { ToolbarSlotContext } from "./ToolbarSlotContext";
 /** Идентификатор колонки, по которой фильтруют рынок. Один во всех таблицах. */
 export const MARKET_COLUMN_ID = "market";
 
-export interface DataTableProps<T extends RowData> {
+interface DataTableProps<T extends RowData> {
   data: T[];
   columns: ColumnDef<typeof features, T, any>[];
   /** Корневой `data-testid`; из него же выводятся `-empty` и `-loading`. */
@@ -38,6 +38,8 @@ export interface DataTableProps<T extends RowData> {
   /** Сообщение вместо таблицы: пусто, ошибка, источник молчит. */
   notice?: { testid: string; text: string } | null;
   emptyText: string;
+  /** Что колонкам нужно от компонента: ячейки читают его через `table.options.meta`. */
+  meta?: object;
 }
 
 /**
@@ -62,6 +64,7 @@ export function DataTable<T extends RowData>({
   loading = false,
   notice = null,
   emptyText,
+  meta,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
@@ -81,6 +84,7 @@ export function DataTable<T extends RowData>({
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnFiltersChange: setColumnFilters,
+    meta,
   });
 
   const marketFilter = table.getColumn(MARKET_COLUMN_ID);

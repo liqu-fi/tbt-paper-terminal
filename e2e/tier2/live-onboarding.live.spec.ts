@@ -52,7 +52,7 @@ test.describe("live: cold onboarding", () => {
       timeout: liveEnv.fillTimeoutMs,
     });
     await app.signinButton.click();
-    await expect(app.terminal).toBeVisible({ timeout: liveEnv.fillTimeoutMs });
+    await expect(app.tradeReady).toBeVisible({ timeout: liveEnv.fillTimeoutMs });
 
     // Lands trade-blocked: zero margin, deposit hint up.
     await expect(new TradePanel(page).insufficientMargin).toBeVisible({

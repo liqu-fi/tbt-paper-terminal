@@ -1,4 +1,5 @@
 import { abs, Side } from "@liq/sdk";
+import { formatQty } from "@liq/core";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { DASH, fmtPrice, fmtQty } from "../../lib/format";
+import { DASH, fmtPrice } from "../../lib/format";
 import type { PositionRow } from "./usePositionRows";
 
 /**
@@ -74,7 +75,7 @@ export function ClosePositionsDialog({
                   {long ? "Long" : "Short"}
                 </span>
                 <span className="text-muted">
-                  {fmtQty(abs(r.position.size))}
+                  {formatQty(abs(r.position.size))}
                 </span>
                 <span className="text-muted">
                   {r.markPrice === undefined ? DASH : fmtPrice(r.markPrice)}

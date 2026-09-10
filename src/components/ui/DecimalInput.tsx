@@ -1,8 +1,8 @@
+import { sanitizeDecimal } from "@liq/core";
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { sanitizeDecimal } from "../../lib/decimal";
 
 type Props = Omit<
   InputHTMLAttributes<HTMLInputElement>,

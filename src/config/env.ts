@@ -67,12 +67,9 @@ function readTurnkeyConfigError(): string | null {
 }
 
 export const env = {
-  deployEnv: (import.meta.env.VITE_DEPLOY_ENV ?? "staging") as
-    | "staging"
-    | "production",
-  chainId: Number(import.meta.env.VITE_CHAIN_ID ?? 6343),
   gatewayUrl: requireGatewayUrl(),
-  rpcUrl: import.meta.env.VITE_RPC_URL ?? "https://carrot.megaeth.com/rpc",
+  /** Подмена RPC — hermetic e2e ставит свой origin; без неё RPC из SDK (см. `chain.ts`). */
+  rpcUrl: (import.meta.env.VITE_RPC_URL as string | undefined) || undefined,
   walletConnectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "",
   turnkey,
   turnkeyConfigError: readTurnkeyConfigError(),

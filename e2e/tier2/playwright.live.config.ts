@@ -32,7 +32,6 @@ export default defineConfig({
           `VITE_GATEWAY_URL=${liveEnv.gatewayUrl}`,
           `VITE_RPC_URL=${liveEnv.rpcUrl}`,
           `VITE_DEPLOY_ENV=${liveEnv.deployEnv}`,
-          `VITE_CHAIN_ID=${liveEnv.chainId}`,
           "VITE_WALLETCONNECT_PROJECT_ID=",
           // The live tier signs with the mnemonic-derived injected wallet, not
           // the Turnkey door (the product's only one) — see src/config/env.ts.

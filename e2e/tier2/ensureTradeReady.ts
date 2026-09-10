@@ -21,9 +21,9 @@ export async function ensureTradeReady(page: Page): Promise<void> {
   await app.goto();
   await app.connect();
 
-  // Wait for the session gate to resolve to a concrete stage.
+  // Wait for the session to resolve to a concrete stage.
   await expect(
-    app.noAccountGate.or(app.needsSigninGate).or(app.terminal),
+    app.noAccountGate.or(app.needsSigninGate).or(app.tradeReady),
   ).toBeVisible({ timeout });
 
   if (await app.noAccountGate.isVisible()) {
@@ -33,7 +33,7 @@ export async function ensureTradeReady(page: Page): Promise<void> {
   if (await app.needsSigninGate.isVisible()) {
     await app.signinButton.click();
   }
-  await expect(app.terminal).toBeVisible({ timeout });
+  await expect(app.tradeReady).toBeVisible({ timeout });
 
   // Deposit a little margin if the account has none.
   const trade = new TradePanel(page);

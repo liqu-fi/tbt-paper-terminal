@@ -1,19 +1,14 @@
 import type { GatewayOrder } from "@liq/core";
 import { useAccountId, useOrderHistoryQuery } from "@liq/react";
 import { Side } from "@liq/sdk";
+import { formatQty, parseWadLoose } from "@liq/core";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useMemo } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
 
-import {
-  DASH,
-  fmtPrice,
-  fmtQty,
-  fmtTime,
-  parseWadLoose,
-} from "../../lib/format";
+import { DASH, fmtPrice, fmtTime } from "../../lib/format";
 import { marketSymbol, useSelectedMarket } from "../market/useSelectedMarket";
 
 interface Row {
@@ -60,7 +55,7 @@ const columns = helper.columns([
     header: "Size",
     cell: (info) => {
       const size = parseWadLoose(info.row.original.order.sizeDelta);
-      return fmtQty(size < 0n ? -size : size);
+      return formatQty(size < 0n ? -size : size);
     },
   }),
   helper.accessor((r) => Number(parseWadLoose(r.order.limitPrice ?? "0")), {

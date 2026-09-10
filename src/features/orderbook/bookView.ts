@@ -5,8 +5,8 @@ import {
   Price,
   tickDecimals,
 } from "@liq/sdk";
+import { wadToNumber } from "@liq/core";
 
-import { toNum } from "@/lib/format";
 
 /** Пустой слот сетки: место занято, данных нет. */
 export type Slot = BookRow | null;
@@ -79,7 +79,7 @@ export function fmtBookPrice(price: bigint, tick: bigint): string {
  * как больший, чем есть на самом деле.
  */
 export function fmtBookSize(size: bigint): string {
-  const decimals = toNum(size) < 1 ? 5 : 2;
+  const decimals = wadToNumber(size) < 1 ? 5 : 2;
   return formatQty(size, { minDecimals: decimals, maxDecimals: decimals });
 }
 

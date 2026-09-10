@@ -4,8 +4,8 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
-// The two onboarding gates wait on the heaviest async chains in the suite:
-// create-account → needs-signin, and (enable-book on-chain tx + SIWE) → terminal.
+// The two onboarding steps wait on the heaviest async chains in the suite:
+// create-account → needs-signin, and SIWE → trade-ready (Buy / Sell rendered).
 // `globalSetup` warms Vite's dep-optimize so these don't pay that one-time cost,
 // but the opening wave still boots several heavy wagmi/viem apps in parallel, so
 // the cold-onboarding path runs ~2x its warm/isolation time. This budget sits
@@ -25,6 +25,12 @@ export class AppPage {
   readonly signinButton: Locator;
   readonly signinError: Locator;
   readonly terminal: Locator;
+  /**
+   * Buy button — rendered only at stage `ready`. `terminal-root` is on screen
+   * from `no-account` on (the CTA lives in the ticket footer), so it no longer
+   * means "signed in"; wait on this instead.
+   */
+  readonly tradeReady: Locator;
   readonly wrongChainGate: Locator;
   readonly switchChainButton: Locator;
   readonly switchChainError: Locator;
@@ -42,6 +48,7 @@ export class AppPage {
     this.signinButton = page.getByTestId("signin-button");
     this.signinError = page.getByTestId("signin-error");
     this.terminal = page.getByTestId("terminal-root");
+    this.tradeReady = page.getByTestId("submit-buy-button");
     this.wrongChainGate = page.getByTestId("session-wrong-chain");
     this.switchChainButton = page.getByTestId("switch-chain-button");
     this.switchChainError = page.getByTestId("switch-chain-error");
@@ -66,7 +73,7 @@ export class AppPage {
 
   async signIn(): Promise<void> {
     await this.signinButton.click();
-    await expect(this.terminal).toBeVisible({ timeout: ONBOARD_GATE_TIMEOUT });
+    await expect(this.tradeReady).toBeVisible({ timeout: ONBOARD_GATE_TIMEOUT });
   }
 
   /** From a connected wallet that already owns a perps account → terminal. */
@@ -75,7 +82,7 @@ export class AppPage {
     await this.signIn();
   }
 
-  /** Full cold onboarding: connect → mint account → enable book + sign-in. */
+  /** Full cold onboarding: connect → mint account → sign-in → trade-ready. */
   async onboard(): Promise<void> {
     await this.connect();
     await this.createAccount();

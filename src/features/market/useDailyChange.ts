@@ -4,7 +4,7 @@ import { useCandles } from "@liq/react";
 /** Сколько часовых баров нужно, чтобы у последнего был сосед сутками раньше. */
 const BARS = 25;
 
-export interface DailyChange {
+interface DailyChange {
   /** Проценты, знаковые. */
   pct: number;
   /** Абсолютная разница цены, WAD, знаковая. */

@@ -7,7 +7,7 @@
  * Configure via env vars or an (untracked) `.env.e2e.local` — see
  * `.env.e2e.example`.
  */
-export interface LiveEnv {
+interface LiveEnv {
   enabled: boolean;
   gatewayUrl: string;
   rpcUrl: string;

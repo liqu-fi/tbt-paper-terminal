@@ -13,10 +13,11 @@ import {
   validateOrder,
 } from "@liq/sdk";
 import { useMarketsFullRestQuery } from "@liq/react";
+import { wadToFixed } from "@liq/core";
 import { useState } from "react";
 
-import { wadToFixed } from "../../lib/format";
 import type { MarketSummary } from "../market/useSelectedMarket";
+import { baseSymbolOf } from "../orderbook/bookView";
 import { ticketSummary, type TicketSummary } from "./ticketSummary";
 
 const WAD = 10n ** 18n;
@@ -24,7 +25,7 @@ const BPS = 10_000n;
 
 export type SizeUnit = "base" | "usd";
 
-export type OrderSizing = {
+type OrderSizing = {
   sizeStr: string;
   setSizeStr: (v: string) => void;
   unit: SizeUnit;
@@ -102,7 +103,7 @@ export function useOrderSizing(params: {
   // одиннадцать миноров обещало то, чего `/markets` не слал. `null` значит
   // «рынок не объявил», и таким доходит до лестницы и до вердикта.
   const maxLeverage = maxLeverageFromBps(market?.initialMarginBps ?? 0n);
-  const baseSymbol = market?.symbol?.split(/[-/]/)[0]?.toUpperCase() ?? "";
+  const baseSymbol = baseSymbolOf(market?.symbol);
   // Минимального шага у рынка нет источника нигде в контуре — ни колонки в
   // схеме, ни ончейн-чтения (0.46.0 убрала и поле). Знаков после запятой
   // выводить не из чего, поэтому их четыре — умолчание поля ввода, а не

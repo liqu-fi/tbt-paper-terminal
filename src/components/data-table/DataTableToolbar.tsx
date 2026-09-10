@@ -12,7 +12,7 @@ import {
 import { ALL_MARKETS } from "./features";
 
 /** Что тулбару нужно знать о колонке — ровно столько и ничего больше. */
-export interface ToolbarColumn {
+interface ToolbarColumn {
   id: string;
   label: string;
   visible: boolean;
@@ -20,7 +20,7 @@ export interface ToolbarColumn {
   toggle: () => void;
 }
 
-export interface ToolbarMarket {
+interface ToolbarMarket {
   id: string;
   symbol: string;
 }

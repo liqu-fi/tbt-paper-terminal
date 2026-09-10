@@ -8,7 +8,7 @@
  * это единственная часть входа через Turnkey, которую можно проверить без
  * браузера, кошелька и живого анклава.
  */
-export type IdentityResetReason = "identity-changed" | "token-address-mismatch";
+type IdentityResetReason = "identity-changed" | "token-address-mismatch";
 
 export function identityResetReason(input: {
   /** subOrgId на прошлом кадре. */

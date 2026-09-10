@@ -1,97 +1,35 @@
-import { formatUnits } from "viem";
+import { formatPrice, formatRatio, formatUsd, wadToNumber } from "@liq/core";
 
 /**
- * Parse a gateway numeric string into a bigint, tolerating the **scientific
- * notation** the order-gateway emits for large values.
- *
- * The gateway round-trips 18-dec WAD fields through a JS `number`, so any
- * `limitPrice` / `triggerPrice` ≥ 1e21 (a price ≥ \$1000 in 18 decimals) comes
- * back as e.g. `"1e+21"` instead of a plain integer string. Plain `BigInt()`
- * throws on that (`Cannot convert 1e+21 to a BigInt`) — and an uncaught throw
- * in a render (e.g. the open-orders table) blanks the subtree. This is the
- * display layer's safety net: it must NEVER throw. The gateway should also be
- * fixed to send plain integer strings; until then this keeps the UI alive.
+ * Здесь только то, чего нет в `@liq/core`: деньги, количества, разбор WAD и
+ * адреса печатает SDK (`formatUsd`, `formatQty`, `parseWadLoose`, `wadToFixed`,
+ * `truncateAddress`, `sanitizeDecimal`) — стакан и таблицы говорят одним языком.
  */
-export function parseWadLoose(value: string): bigint {
-  if (/^-?\d+$/.test(value)) return BigInt(value); // already a plain integer
-  // mantissa (with optional fraction) + exponent, e.g. "-1.5e+21".
-  const m = /^(-?)(\d+)(?:\.(\d+))?[eE]([+-]?\d+)$/.exec(value);
-  if (m) {
-    const [, sign, intPart, frac = "", expPart] = m;
-    const shift = Number(expPart) - frac.length;
-    const digits = intPart + frac;
-    if (shift >= 0) return BigInt(sign + digits + "0".repeat(shift));
-    // Negative net exponent → a fractional WAD; truncate toward zero (display).
-    const kept = digits.slice(0, digits.length + shift);
-    return BigInt(sign + (kept || "0"));
-  }
-  // Anything else: stay alive with a lossy fallback rather than throw.
-  const n = Number(value);
-  return Number.isFinite(n) ? BigInt(Math.trunc(n)) : 0n;
-}
-
-/** 18-decimal WAD bigint -> JS number (lossy; display only). */
-export function toNum(wad: bigint): number {
-  return Number(formatUnits(wad, 18));
-}
-
-/**
- * Format an 18-dec WAD bigint to a plain decimal string truncated (toward
- * zero) to `decimals` fractional digits, with trailing zeros stripped. Used to
- * seed money inputs from a computed amount (slider / Max button) so the typed
- * value stays exact-parseable yet human-sized. Truncates rather than rounds so
- * a "Max" never seeds an amount that exceeds the source balance.
- */
-export function wadToFixed(wad: bigint, decimals: number): string {
-  const neg = wad < 0n;
-  const s = formatUnits(neg ? -wad : wad, 18);
-  const [int, frac = ""] = s.split(".");
-  const kept = frac.slice(0, Math.max(0, decimals)).replace(/0+$/, "");
-  return (neg ? "-" : "") + (kept ? `${int}.${kept}` : int);
-}
-
-export function fmtUsd(v: bigint): string {
-  return `$${toNum(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function fmtSignedUsd(v: bigint): string {
-  const sign = v < 0n ? "-" : "+";
-  return `${sign}$${Math.abs(toNum(v)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function fmtPrice(v: bigint): string {
-  return toNum(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
-}
-
-export function fmtQty(v: bigint): string {
-  // Trim trailing zeros from the FRACTION only — a blind `/\.?0+$/` over the
-  // whole string also eats trailing zeros off the integer part (10 -> "1",
-  // 100 -> "1"), which is wrong on a trading screen.
-  const s = formatUnits(v, 18);
-  const [int, frac] = s.split(".");
-  if (frac === undefined) return s;
-  const trimmed = frac.replace(/0+$/, "");
-  return trimmed ? `${int}.${trimmed}` : int;
-}
-
-/** Bps is RAW (100 = 1%), not 18-decimal. */
-export function fmtPctFromBps(bps: bigint): string {
-  return `${(Number(bps) / 100).toFixed(2)}%`;
-}
 
 /** Прочерк — единственное написание «данных нет» на экране. */
 export const DASH = "—";
 
+/**
+ * Цена в таблицах и шапке: без `$` (валюту называет заголовок колонки) и без
+ * обязательных копеек — «69,900», а не «$69,900.00».
+ */
+export function fmtPrice(v: bigint): string {
+  return formatPrice(v, { sign: "", minDecimals: 0 });
+}
+
+/** «+$12.34» / «-$12.34»: SDK ставит только минус, плюс дописывается здесь. */
+export function fmtSignedUsd(v: bigint): string {
+  return (v < 0n ? "" : "+") + formatUsd(v);
+}
+
 /** WAD-доля (1e18 = 100%) со знаком: «+1.23%». */
 export function fmtSignedPct(ratio: bigint): string {
-  const pct = toNum(ratio) * 100;
-  return `${pct < 0 ? "" : "+"}${pct.toFixed(2)}%`;
+  return (ratio < 0n ? "" : "+") + formatRatio(ratio);
 }
 
 /** WAD-плечо: «10x», «3.5x». Целое печатается без дробной части. */
 export function fmtLeverage(wad: bigint): string {
-  const n = toNum(wad);
-  return `${Number(n.toFixed(1))}x`;
+  return `${Number(wadToNumber(wad).toFixed(1))}x`;
 }
 
 /** Unix-миллисекунды → «02.09 14:35» в локали пользователя. */
@@ -104,7 +42,19 @@ export function fmtTime(ms: number): string {
   });
 }
 
-/** Хэш транзакции в человеческий вид: «0xabcd…ef01». */
-export function fmtHash(hash: string): string {
-  return hash.length <= 12 ? hash : `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+/**
+ * Число из поля ввода: пустое или неразборчивое — `0n`, то есть «не введено».
+ *
+ * @remarks `Price.parse("")` уже отдаёт `0n`; try/catch — на мусор, который
+ * поле по идее не пропускает, но проверка на границе с пользователем остаётся.
+ */
+export function parseOrZero(
+  parse: (raw: string) => bigint,
+  raw: string,
+): bigint {
+  try {
+    return parse(raw);
+  } catch {
+    return 0n;
+  }
 }
