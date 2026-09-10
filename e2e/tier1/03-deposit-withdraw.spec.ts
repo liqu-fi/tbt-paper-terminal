@@ -30,6 +30,32 @@ test.describe("deposit & withdraw", () => {
     await expect(trade.insufficientMargin).toBeHidden();
     // the app sent exactly the typed amount as a positive collateral delta
     expect(world.lastCollateralDelta).toBe(Margin.parse("200"));
+    // …into the sUSDC slot: USDC is the default tab.
+    expect(world.lastCollateralId).toBe(1n);
+  });
+
+  test("depositing USDm credits margin and targets its own collateral id", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      w.accounts[0].withdrawable = 0n;
+      return w;
+    });
+
+    await market.openDeposit();
+    await deposit.token("USDm").click();
+    await expect(deposit.root).toContainText("Deposit USDm");
+    await deposit.deposit("200");
+
+    await expect(deposit.root).toBeHidden();
+    await expect(market.margin).toHaveText(/\$200\.00/);
+    // 18-dec token: the typed amount is credited as-is…
+    expect(world.lastCollateralDelta).toBe(Margin.parse("200"));
+    // …under USDm's spot market (2 on staging), not the sUSDC slot.
+    expect(world.lastCollateralId).toBe(2n);
   });
 
   test("withdrawing debits margin by the entered amount", async ({

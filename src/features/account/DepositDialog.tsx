@@ -1,6 +1,11 @@
 import { Margin } from "@liq/sdk";
-import { useAccountId, useDepositMutation } from "@liq/react";
-import { formatUsd, wadToFixed } from "@liq/core";
+import {
+  useAccountId,
+  useDepositMutation,
+  useDepositableBalance,
+  useNetworkId,
+} from "@liq/react";
+import { formatUsd, getChainConfig, getCollaterals, wadToFixed } from "@liq/core";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,9 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { useUsdcBalanceWad } from "./useUsdcBalance";
 
 export function DepositDialog({
   open,
@@ -22,14 +27,22 @@ export function DepositDialog({
   onClose: () => void;
 }) {
   const accountId = useAccountId();
+  const networkId = useNetworkId();
   const deposit = useDepositMutation();
   const [amount, setAmount] = useState("");
+  // Депозитные токены контура из конфига SDK: на prod один USDC, на staging
+  // ещё USDm. Переключатель рисуется только когда есть из чего выбирать.
+  const collaterals = getCollaterals(getChainConfig(networkId));
+  const symbols = Object.keys(collaterals);
+  const [symbol, setSymbol] = useState(symbols[0]);
+  const { decimals } = collaterals[symbol];
 
-  // Wallet USDC balance (lifted to 18-dec WAD), the token this deposit actually
-  // spends — gating on sUSDC here would show $0.00 and block every deposit for a
-  // fresh faucet user who holds USDC and no sUSDC. Best-effort: an unavailable
-  // read resolves to 0n → no Max, no cap.
-  const { data: balance } = useUsdcBalanceWad();
+  // Wallet balance of the token this deposit actually spends (lifted to WAD) —
+  // gating on the synth here would show $0.00 and block every deposit for a
+  // fresh faucet user who holds the token and none of its synth. Best-effort:
+  // an unavailable read resolves to 0n → no Max, no cap.
+  const { data } = useDepositableBalance(symbol);
+  const balance = data?.token;
 
   const amountWad = parseOrZero(Margin.parse, amount);
   const exceedsBalance = balance !== undefined && amountWad > balance;
@@ -41,7 +54,7 @@ export function DepositDialog({
   function onDeposit() {
     if (accountId === undefined || amountWad <= 0n || invalid) return;
     deposit.mutate(
-      { amount, accountId },
+      { amount, accountId, collateral: symbol },
       {
         onSuccess: () => {
           setAmount("");
@@ -69,9 +82,32 @@ export function DepositDialog({
       >
         <DialogHeader className="mb-3">
           <DialogTitle className="text-sm font-semibold">
-            Deposit USDC
+            Deposit {symbol}
           </DialogTitle>
         </DialogHeader>
+        {symbols.length > 1 && (
+          <Tabs
+            value={symbol}
+            onValueChange={(next) => {
+              setSymbol(next);
+              setAmount("");
+            }}
+            className="mb-2"
+          >
+            <TabsList className="h-7 w-full">
+              {symbols.map((s) => (
+                <TabsTrigger
+                  key={s}
+                  value={s}
+                  className="text-xs"
+                  data-testid={`deposit-token-${s}`}
+                >
+                  {s}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
         {balance !== undefined && (
           <div className="mb-1 flex justify-between text-[11px] text-muted">
             <span>Wallet balance</span>
@@ -83,7 +119,7 @@ export function DepositDialog({
         <DecimalInput
           value={amount}
           onValueChange={setAmount}
-          maxDecimals={6}
+          maxDecimals={decimals}
           invalid={invalid}
           placeholder="100"
           data-testid="deposit-amount-input"

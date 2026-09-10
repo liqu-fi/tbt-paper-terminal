@@ -178,8 +178,9 @@ export function WithdrawDialog({
       ? [
           { queryKey: liqQueryKeys.account.margin(networkId, wallet) },
           { queryKey: debtKey },
-          // Баланс USDC кошелька для диалога депозита живёт в своём запросе.
-          { queryKey: ["usdc-balance-wad"] },
+          // Вывод отдаёт USDC — баланс токена в диалоге депозита устарел.
+          // Триггер `withdrawn` в SDK никто не помечает, поэтому руками.
+          { queryKey: liqQueryKeys.balances.depositable(networkId, wallet, "USDC") },
         ]
       : [],
     onTransactionSuccess: () => {

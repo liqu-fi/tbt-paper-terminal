@@ -395,6 +395,11 @@ export class DepositDialog {
     this.validation = page.getByTestId("deposit-validation");
   }
 
+  /** Вкладка токена (USDC | USDm); есть только когда у контура больше одного. */
+  token(symbol: string): Locator {
+    return this.root.getByTestId(`deposit-token-${symbol}`);
+  }
+
   async deposit(amount: string): Promise<void> {
     await this.amountInput.fill(amount);
     await this.submitButton.click();

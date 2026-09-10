@@ -120,9 +120,10 @@ function computeRead(
         return [BigInt(world.accounts.length)];
       }
       // ERC-20 token balance — plenty for deposit flows. Honour the token's
-      // real decimals: USDC (what a deposit actually spends) is 6-dec, sUSDC
-      // and the rest are 18-dec. A flat 18-dec value for USDC would let the
-      // dialog's 6-dec→WAD lift overstate the balance by 10^12.
+      // real decimals: USDC (what a deposit actually spends) is 6-dec, sUSDC,
+      // USDm/sUSDM (staging, unlisted in ADDR) and the rest are 18-dec. A flat
+      // 18-dec value for USDC would let the dialog's 6-dec→WAD lift overstate
+      // the balance by 10^12.
       return [
         logical === "usdc" ? 1_000_000n * 10n ** 6n : 1_000_000n * 10n ** 18n,
       ];

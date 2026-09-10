@@ -10,7 +10,6 @@ import {
   useWallet,
 } from "@liq/react";
 import { getChainConfig } from "@liq/sdk";
-import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 
 import { Button } from "@/components/ui/button";
@@ -74,7 +73,6 @@ export function FaucetDialog({
 function FaucetBody() {
   const networkId = useNetworkId();
   const wallet = useWallet();
-  const queryClient = useQueryClient();
   // Токен фаусета — маржинальный USDC контура (на staging это fUSDC): тот же
   // адрес, который тратит депозит. Адрес самого фаусета SDK берёт из своей
   // таблицы по chainId, здесь он не нужен.
@@ -135,18 +133,9 @@ function FaucetBody() {
             <Button
               disabled={row.block !== null || claim.isPending || !wallet}
               onClick={() =>
-                claim.mutate(
-                  { token: t.token.address },
-                  {
-                    // Баланс кошелька для диалога депозита живёт в своём
-                    // запросе, не в срезе SDK, — сбрасывается руками.
-                    onSuccess: () =>
-                      void queryClient.invalidateQueries({
-                        queryKey: ["usdc-balance-wad"],
-                      }),
-                    onError: () => {},
-                  },
-                )
+                // Баланс для диалога депозита — срез SDK, протухает по
+                // `faucetClaimed` сам.
+                claim.mutate({ token: t.token.address }, { onError: () => {} })
               }
               data-testid={`faucet-claim-${t.token.symbol}`}
             >
