@@ -70,6 +70,11 @@ export function WithdrawDialog({
   const { data: walletClient } = useWalletClient();
   const { data: margins } = useAvailableMarginQuery();
   const [amount, setAmount] = useState("");
+  // Реверт приходит НЕ через `mutation.error`: `useTransactionMutation`
+  // резолвит мутацию хэшем, а откат ресипта отдаёт только колбэком
+  // `onTransactionError`. Без своего состояния диалог молча проглатывал бы
+  // откат — кнопка «мёртвая», маржа не менялась (e2e 03).
+  const [txError, setTxError] = useState<Error | null>(null);
 
   // sUSDC collateral lives under the chain's sUSDC synth-market id (staging = 1,
   // prod = 3) — the same id DepositBuilder credits. Hardcoding 0 withdrew from an
@@ -181,16 +186,20 @@ export function WithdrawDialog({
       setAmount("");
       onClose();
     },
+    onTransactionError: setTxError,
   });
 
   const pending = withdraw.isPending;
-  const error = withdraw.error;
+  // Отказ кошелька — в `withdraw.error` (SDK не зовёт колбэк на user-reject),
+  // реверт — в `txError`; показываем любой.
+  const error = withdraw.error ?? txError;
 
   // `mutate` (not `mutateAsync`): a failed op surfaces via the mutation's
   // `error` (rendered below); rejecting this handler would log an unhandled
   // promise rejection via the `void` click binding.
   function onSubmit() {
     if (accountId === undefined || amountWad <= 0n || invalid) return;
+    setTxError(null);
     withdraw.mutate({ accountId, amountWad });
   }
 
