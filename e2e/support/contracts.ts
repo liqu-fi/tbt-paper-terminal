@@ -31,22 +31,22 @@ const lower = (a: string) => a.toLowerCase();
 export const ADDR = {
   perpsMarketProxy: [
     "0x330E5A387DFD403a71A81A368eC649b7c1be3AC9", // production
-    "0x60A9D256fdF5E60FcbA26cc85A51c075e9B7336B", // staging (post 2026-08-25 contour redeploy)
+    "0xCf8e93CE16C59A1117c44113492F42b09e7081bc", // staging (5-dev contour, 2026-09-09; liq-core ≥ 0.48.0)
   ].map(lower),
   perpsAccountProxy: [
     "0xE5718c35497c1A902abE2Cf5353EF42F4b23F4D6", // production
-    "0x2415A99a50C975AcF2FE70417A073747bf87435A", // staging (post 2026-08-25 contour redeploy)
+    "0x022EE79BF133E1A3CA282c0842bf18886f8628Ef", // staging (5-dev contour, 2026-09-09; liq-core ≥ 0.48.0)
   ].map(lower),
   trustedMulticallForwarder: ["0xE2C5658cC5C448B48141168f3e475dF8f65A1e3e"].map(
     lower,
   ),
   usdc: [
     "0x7E58474Fd67c921F85592C2131A25e55f38A5715", // production
-    "0x9e2084633fFCF9f84E2863196423F1D5755906C3", // staging (post 2026-08-25 contour redeploy)
+    "0x9c793E35391E8071402C0efF2eEaF2a7214100C5", // staging (5-dev contour, 2026-09-09; liq-core ≥ 0.48.0)
   ].map(lower),
   susdc: [
     "0x371503C5851E271456FBDFDfe93169Ade2D55b61", // production
-    "0xD07B0387f27D409ECbf9be3E89477B719d1108A2", // staging (post 2026-08-25 contour redeploy)
+    "0xD995Cf85A9ae024EA87AD62EBd229fB403C29843", // staging (5-dev contour, 2026-09-09; liq-core ≥ 0.48.0)
   ].map(lower),
 } as const;
 
