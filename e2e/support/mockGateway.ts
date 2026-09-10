@@ -13,8 +13,6 @@ import { defaultOracleCandles } from "./world";
 import type {
   GatewayOrder,
   MockWorld,
-  SessionKeyGrantPayload,
-  SessionKeyRecord,
 } from "./world";
 
 /**
@@ -364,50 +362,6 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     if (modeCheck) {
       const acct = world.accounts.find((a) => a.id.toString() === modeCheck[1]);
       await send(route, { mode: acct?.orderMode ?? "ONCHAIN" });
-      return;
-    }
-
-    // --- session keys (1-click trading) ------------------------------------
-    // "/session-keys/nonce" must precede the "/session-keys/:id" DELETE matcher,
-    // which would otherwise capture it as id="nonce".
-    if (path.endsWith("/session-keys/nonce")) {
-      world.sessionKeyNonceRequests += 1;
-      await send(route, { nextNonce: world.sessionKeyNonce.toString() });
-      return;
-    }
-    if (path.endsWith("/session-keys")) {
-      if (method === "POST") {
-        if (world.faults.sessionKeyRegisterStatus) {
-          await error(route, world.faults.sessionKeyRegisterStatus);
-          return;
-        }
-        const payload = JSON.parse(req.postData() ?? "{}") as {
-          grant: SessionKeyGrantPayload;
-          signature: string;
-        };
-        const record: SessionKeyRecord = {
-          id: `sess-${world.sessionKeys.length + 1}`,
-          grant: payload.grant,
-          signature: payload.signature,
-          // Echo the client's validUntil: the real gateway is authoritative
-          // here, and the SDK prefers this value over its own.
-          expiresAt: Number(payload.grant.validUntil),
-        };
-        world.sessionKeys.push(record);
-        world.sessionKeyNonce += 1n;
-        await send(route, { id: record.id, expiresAt: record.expiresAt });
-        return;
-      }
-      await send(route, world.sessionKeys);
-      return;
-    }
-    const sessionKey = path.match(/\/session-keys\/([^/]+)$/);
-    if (sessionKey && method === "DELETE") {
-      world.revokedSessionKeyIds.push(sessionKey[1]);
-      world.sessionKeys = world.sessionKeys.filter(
-        (s) => s.id !== sessionKey[1],
-      );
-      await send(route, { ok: true });
       return;
     }
 

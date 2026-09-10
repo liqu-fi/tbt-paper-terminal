@@ -439,12 +439,6 @@ export class AccountPanelPage {
   row(name: string): Locator {
     return this.page.getByTestId(`account-${name}`);
   }
-  get depositButton(): Locator {
-    return this.page.getByTestId("account-deposit-button");
-  }
-  get withdrawButton(): Locator {
-    return this.page.getByTestId("account-withdraw-button");
-  }
 }
 
 export class ChartFramePage {

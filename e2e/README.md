@@ -35,21 +35,10 @@ const { trade, userInfo } = await enterTerminal(page, world, () =>
 
 Coverage (`tier1/`): boot + onboarding, market data, deposit/withdraw, market /
 limit / conditional orders, form gating, positions, open orders + cancel,
-history, live SSE updates, error states, disconnect, session keys (1-click).
+history, live SSE updates, error states, disconnect.
 
-### Session keys in Tier 1
-
-`16-session-keys` (grant lifecycle) and `17-session-trading` (1-click) run
-against the SDK's **wallet-signed** `SessionKeyManager`, not Turnkey: with
-`VITE_TURNKEY_SESSION` unset the SDK still returns a working manager, so the
-whole flow — grant, persistence, revoke, expiry, order signing — is hermetic.
-The grant is registered through four mock-gateway routes (`/session-keys/nonce`,
-`POST|GET /session-keys`, `DELETE /session-keys/:id`) backed by `world.sessionKeys`.
-
-Who signed an order is asserted two ways, because either alone is ambiguous:
-`world.signRequests` must gain no `eth_signTypedData_v4`, **and** the submitted
-signature must differ from `WALLET_DUMMY_SIG` (the injected wallet's canned
-value). The enclave path is Tier 2 only — see `live-session-keys.live.spec.ts`.
+1-click trading has no hermetic tier: since #50 the session key is the SDK-managed
+Turnkey session (no pill, no manual grant), and the enclave cannot be mocked.
 
 ## Tier 2 — live (opt-in)
 
