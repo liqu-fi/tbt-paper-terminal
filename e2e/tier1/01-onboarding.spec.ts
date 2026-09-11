@@ -176,7 +176,7 @@ test.describe("boot + onboarding", () => {
     expect(world.chainId).toBe(1); // the wallet never moved
   });
 
-  test("a rejected create-account tx surfaces the error and recovers on retry", async ({
+  test("a refused create-account surfaces the error and recovers on retry", async ({
     page,
     world,
   }) => {
@@ -186,17 +186,19 @@ test.describe("boot + onboarding", () => {
     await app.connect();
     await expect(app.noAccountGate).toBeVisible();
 
-    world.faults.walletSendRejects = true;
+    // Account creation is relayed (ADR-0063), so the refusal that matters is
+    // the gateway's, not the wallet's: it happens before any gas is spent.
+    world.faults.relayRejects = "RATE_LIMITED";
     await app.createAccountButton.click();
-    // The wallet rejection lands in the ErrorLine — not a silent dead button.
-    // (No expect.poll barrier à la the SIWE test: the reject is a synchronous
-    // throw in the wallet — the visible ErrorLine itself proves the mutation
-    // settled, so nothing is in flight when the fault clears below.)
+    // The refusal lands in the ErrorLine — not a silent dead button. (No
+    // expect.poll barrier à la the SIWE test: the visible ErrorLine itself
+    // proves the mutation settled, so nothing is in flight when the fault
+    // clears below.)
     await expect(app.createAccountError).toBeVisible();
     await expect(app.noAccountGate).toBeVisible(); // still gated
     expect(world.accounts).toHaveLength(0); // nothing was minted
 
-    delete world.faults.walletSendRejects;
+    delete world.faults.relayRejects;
     await app.createAccountButton.click();
     await expect(app.needsSigninGate).toBeVisible({ timeout: 25_000 });
     expect(world.accounts).toHaveLength(1);

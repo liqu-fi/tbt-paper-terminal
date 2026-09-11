@@ -113,6 +113,22 @@ interface RecordedTx {
   kind: string;
 }
 
+/**
+ * A job of the gasless relay (ADR-0063), as `GET /relay/:jobId` reports it.
+ *
+ * @remarks
+ * The mock gateway plays the relayer: it applies the signed batch to the world
+ * and hands back a hash the app then waits a receipt for, exactly as the real
+ * worker does.
+ */
+export interface RelayJob {
+  state: "completed" | "failed";
+  txHash?: string;
+  gasUsed?: string;
+  status?: "success" | "reverted";
+  error?: string;
+}
+
 /** Динамическая часть строки `/markets/full`. */
 interface WireMarketDynamic {
   openInterest: string | null;
@@ -219,6 +235,10 @@ export interface MockWorld {
     // wallet: reject the next wallet_switchEthereumChain / every eth_sendTransaction
     switchChainRejects?: boolean;
     walletSendRejects?: boolean;
+    // gateway: refuse every POST /relay with this ErrorCode (the relayed path's
+    // failure mode — allowlist, deadline, rate limit — where the wallet path
+    // had `walletSendRejects`)
+    relayRejects?: string;
     // gateway: one-shot 422 INVALID_NONCE on the next POST /orders, naming
     // the expected nonce (drives the SDK's resync-and-retry path)
     submitNonceConflictExpected?: string;
@@ -241,6 +261,14 @@ export interface MockWorld {
   /** collateralId (synth market id) of the last modifyCollateral — must be the sUSDC id, not 0 (#459) */
   lastCollateralId: bigint;
   sentTxs: RecordedTx[];
+  /** Batches the app handed to the relay, newest last — assertable from specs. */
+  relayedBatches: Array<{
+    user: string;
+    calls: Array<{ to: string; value: string; data: string }>;
+    /** Present only on the first relay, while the EOA carries no delegate yet. */
+    authorization?: unknown;
+  }>;
+  relayJobs: Record<string, RelayJob>;
   authNonceRequests: number;
   authVerifyRequests: Array<{ message: string; signature: string }>;
   /** Count of `/auth/verify` calls rejected by `faults.authVerifyStatus`. */
@@ -440,6 +468,8 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     lastCollateralDelta: 0n,
     lastCollateralId: 0n,
     sentTxs: [],
+    relayedBatches: [],
+    relayJobs: {},
     authNonceRequests: 0,
     authVerifyRequests: [],
     authVerifyRejections: 0,

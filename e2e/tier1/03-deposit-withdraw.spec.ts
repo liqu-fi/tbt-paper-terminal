@@ -1,7 +1,7 @@
 import { Margin } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
-import { WAD } from "../support/constants";
+import { TEST_ADDRESS, WAD } from "../support/constants";
 import { expect, test } from "../support/fixtures";
 import { armHold, readyWorld, releaseHold } from "../support/world";
 
@@ -32,6 +32,40 @@ test.describe("deposit & withdraw", () => {
     expect(world.lastCollateralDelta).toBe(Margin.parse("200"));
     // …into the sUSDC slot: USDC is the default tab.
     expect(world.lastCollateralId).toBe(1n);
+  });
+
+  test("the deposit is relayed: the user only signs, the first batch carries the 7702 authorization", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      w.accounts[0].withdrawable = 0n;
+      return w;
+    });
+
+    await market.openDeposit();
+    await deposit.deposit("200");
+    await expect(deposit.root).toBeHidden();
+
+    // The whole promise of ADR-0063: the wallet signs and never sends. Every
+    // recorded tx belongs to the relayer ("relay"), none to the wallet — so a
+    // wallet holding zero ETH could have done this.
+    expect(world.sentTxs.filter((t) => t.kind !== "relay")).toHaveLength(0);
+    expect(world.signRequests).toContain("eth_signTypedData_v4");
+    // The EOA carries no delegate yet (the mock chain answers "0x" to
+    // eth_getCode), so this first batch must carry the authorization.
+    expect(world.signRequests).toContain("eth_signAuthorization");
+
+    const batch = world.relayedBatches.at(-1);
+    expect(batch?.authorization).toBeDefined();
+    expect(batch?.user.toLowerCase()).toBe(TEST_ADDRESS.toLowerCase());
+    // approve → wrap → approve → modifyCollateral in ONE batch: the approvals
+    // that used to be their own transactions now ride along, and no call may
+    // carry ETH.
+    expect(batch?.calls).toHaveLength(4);
+    expect(batch?.calls.every((c) => c.value === "0")).toBe(true);
   });
 
   test("depositing USDm credits margin and targets its own collateral id", async ({
