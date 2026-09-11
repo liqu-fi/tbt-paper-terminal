@@ -1,11 +1,10 @@
-import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
 import {
   useAccountId,
-  useCreateAccountMutation,
   useGatewayAuthMutation,
+  useRelayedCreateAccountMutation,
 } from "@liq/react";
 import { useEffect } from "react";
-import { useAccount, useWalletClient } from "wagmi";
+import { useWalletClient } from "wagmi";
 
 import { Button } from "@/components/ui/button";
 
@@ -22,9 +21,11 @@ export function SessionCta({
 }: {
   stage: "no-account" | "needs-signin";
 }) {
-  const { address } = useAccount();
   const accountId = useAccountId();
-  const createAccount = useCreateAccountMutation();
+  // Создание аккаунта едет релеем (ADR-0063): встроенный кошелёк создаётся
+  // пустым, и это первая ончейн-запись, которая раньше упиралась в нулевой
+  // баланс — пользователю приходилось идти за ETH до начала работы.
+  const createAccount = useRelayedCreateAccountMutation();
   const auth = useGatewayAuthMutation();
 
   // После перехода wrong-chain → MegaETH запрос walletClient у wagmi может
@@ -51,11 +52,7 @@ export function SessionCta({
         >
           {createAccount.isPending ? "Creating…" : "Create Account"}
         </Button>
-        <ErrorLine
-          error={createAccount.error}
-          testid="create-account-error"
-          formatMessage={(error) => createAccountErrorMessage(error, address)}
-        />
+        <ErrorLine error={createAccount.error} testid="create-account-error" />
       </div>
     );
   }
@@ -72,21 +69,6 @@ export function SessionCta({
       <ErrorLine error={auth.error} testid="signin-error" />
     </div>
   );
-}
-
-/**
- * Что показать вместо сырого `error.message` при отказе создания аккаунта.
- *
- * @remarks
- * Встроенный кошелёк создаётся пустым, и первая ончейн-запись без ETH иначе
- * объясняется сырым текстом реверта viem — пользователь смотрит на
- * "execution reverted" и не понимает, что ему нужно прислать ETH. Остальные
- * отказы (не про газ) показываются как есть — `isInsufficientGas` целится
- * только в нехватку средств на комиссию.
- */
-function createAccountErrorMessage(error: Error, address: string | undefined): string {
-  if (!isInsufficientGas(error)) return error.message;
-  return `${INSUFFICIENT_GAS_MESSAGE} Send ETH to ${address ?? "your wallet"} and try again.`;
 }
 
 /** Surfaces a mutation error inline so a failed CTA isn't a silent dead-end. */

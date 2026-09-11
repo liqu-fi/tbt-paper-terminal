@@ -21,6 +21,9 @@ import { type MockWorld, nextTxHash } from "./world";
  */
 export const WALLET_DUMMY_SIG = ("0x" + "11".repeat(65)) as string;
 const DUMMY_SIG = WALLET_DUMMY_SIG;
+/** Halves of a canned EIP-7702 authorization; the mock gateway never verifies. */
+const DUMMY_R = ("0x" + "22".repeat(32)) as string;
+const DUMMY_S = ("0x" + "33".repeat(32)) as string;
 
 interface WalletState {
   connected: boolean;
@@ -54,6 +57,22 @@ export async function installWallet(
         case "eth_signTypedData_v4":
           world.signRequests.push(method);
           return DUMMY_SIG;
+        case "eth_signAuthorization": {
+          // EIP-7702 has no wallet RPC of its own; only our Turnkey provider
+          // answers this, and the relay needs it on a user's first batch.
+          world.signRequests.push(method);
+          const [auth] = (params ?? []) as [
+            { address: string; chainId: number; nonce: number },
+          ];
+          return {
+            address: auth.address,
+            chainId: auth.chainId,
+            nonce: auth.nonce,
+            r: DUMMY_R,
+            s: DUMMY_S,
+            yParity: 0,
+          };
+        }
         case "eth_sendTransaction": {
           if (world.faults.walletSendRejects) {
             throw new Error("User rejected the request");

@@ -9,7 +9,8 @@
 import type { Page, Route } from "@playwright/test";
 
 import { TEST_ADDRESS } from "./constants";
-import { defaultOracleCandles } from "./world";
+import { applyWrite, withdrawsCollateral } from "./chain";
+import { defaultOracleCandles, nextTxHash } from "./world";
 import type {
   GatewayOrder,
   MockWorld,
@@ -290,6 +291,68 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
         // Stale/aborted connection (or page closed): leave the frame queued so
         // the live connection still receives it.
       }
+      return;
+    }
+
+    // --- gasless relay (ADR-0063) -----------------------------------------
+    // The gateway plays the relayer here: it applies the batch the user signed
+    // and hands back a hash, so the app's receipt wait resolves exactly as it
+    // does against the real worker.
+    if (path.endsWith("/relay") && method === "POST") {
+      const body = JSON.parse(req.postData() ?? "{}") as {
+        user: string;
+        calls: Array<{ to: string; value: string; data: string }>;
+        authorization?: unknown;
+      };
+      world.relayedBatches.push(body);
+      const jobId = `job-${world.relayedBatches.length}`;
+
+      // Refused by policy before the queue — nothing is charged, nothing runs.
+      if (world.faults.relayRejects) {
+        await error(route, 400, world.faults.relayRejects);
+        return;
+      }
+
+      // A batch the worker's simulation refuses never reaches the chain — that
+      // is the failure mode of the relayed path, where the wallet path had an
+      // on-chain revert. State stays untouched.
+      if (
+        world.faults.collateralReverts &&
+        body.calls.some((c) => withdrawsCollateral(c.data))
+      ) {
+        world.relayJobs[jobId] = {
+          state: "failed",
+          error: "simulation failed: execution reverted",
+        };
+        await send(route, { jobId }, 202);
+        return;
+      }
+
+      const hash = nextTxHash(world);
+      world.receipts[hash] = body.calls.flatMap((c) =>
+        applyWrite(world, c.to.toLowerCase(), c.data),
+      );
+      // `to` is the user's own EOA: under the delegate the relayer's tx is
+      // addressed to it, not to a protocol contract.
+      world.sentTxs.push({ hash, to: body.user, data: "0x", kind: "relay" });
+      world.relayJobs[jobId] = {
+        state: "completed",
+        txHash: hash,
+        gasUsed: "1000000",
+        status: "success",
+      };
+      await send(route, { jobId }, 202);
+      return;
+    }
+
+    if (path.includes("/relay/") && method === "GET") {
+      const jobId = path.slice(path.lastIndexOf("/") + 1);
+      const job = world.relayJobs[jobId];
+      if (!job) {
+        await error(route, 404, "RELAY_JOB_NOT_FOUND");
+        return;
+      }
+      await send(route, { jobId, ...job });
       return;
     }
 

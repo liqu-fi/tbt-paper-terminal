@@ -5,13 +5,11 @@ import {
   useCollateralAmountQuery,
   useLiqOnchain,
   useNetworkId,
-  useTransactionMutation,
+  useRelayedWithdrawMutation,
 } from "@liq/react";
 import { formatUsd, getChainConfig, getCollaterals, wadToFixed } from "@liq/core";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { Hex } from "viem";
-import { usePublicClient, useWalletClient } from "wagmi";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,15 +32,8 @@ export function WithdrawDialog({
   const accountId = useAccountId();
   const onchain = useLiqOnchain();
   const networkId = useNetworkId();
-  const publicClient = usePublicClient();
-  const { data: walletClient } = useWalletClient();
   const { data: margins } = useAvailableMarginQuery();
   const [amount, setAmount] = useState("");
-  // Реверт приходит НЕ через `mutation.error`: `useTransactionMutation`
-  // резолвит мутацию хэшем, а откат ресипта отдаёт только колбэком
-  // `onTransactionError`. Без своего состояния диалог молча проглатывал бы
-  // откат — кнопка «мёртвая», маржа не менялась (e2e 03).
-  const [txError, setTxError] = useState<Error | null>(null);
 
   // Те же токены, что принимает депозит; вывод отдаёт на кошелёк сам токен,
   // а не синт (SDK разворачивает его в том же батче).
@@ -82,64 +73,31 @@ export function WithdrawDialog({
   const exceedsLimit = limit !== undefined && amountWad > limit;
   const invalid = exceedsLimit;
 
-  // Одна транзакция: снять синт с аккаунта и тут же развернуть его в токен —
-  // батч собирает SDK (`WithdrawBuilder`). С долгом `payDebt` встаёт в голову
-  // того же батча (`afterRepay`), а approve под оплату долга с кошелька идут
-  // отдельными транзакциями: через форвардер approve не проходит (msg.sender —
-  // форвардер, а не владелец).
-  const withdraw = useTransactionMutation<
-    `0x${string}`,
-    { accountId: bigint; amountWad: bigint }
-  >({
-    transactionType: "WITHDRAW",
-    mutationFn: async ({ accountId, amountWad }) => {
-      if (!walletClient || !publicClient) throw new Error("Wallet not connected");
-      const send = (to: `0x${string}`, data: Hex) =>
-        walletClient.sendTransaction({
-          account: walletClient.account,
-          chain: walletClient.chain,
-          to,
-          data,
-        });
-
-      const builder = onchain.deposit
-        .withdraw(symbol, amountWad)
-        .forAccount(accountId);
-      if (hasDebt) {
-        builder.afterRepay(onchain.deposit.repay(debt!).forAccount(accountId));
-      }
-      const { approvals, tx } = builder.build();
-      for (const approval of approvals) {
-        const receipt = await publicClient.waitForTransactionReceipt({
-          hash: await send(approval.to, approval.data),
-        });
-        if (receipt.status === "reverted") throw new Error("Approve reverted");
-      }
-      return send(tx.to, tx.data);
-    },
-    // Событие вместо списка ключей: маржа, остаток коллатерала и баланс
-    // кошелька протухают срезами SDK. У долга среза нет — его ключ свой.
-    stale: ["withdrawn"],
-    invalidateKeys: [{ queryKey: debtKey }],
-    onTransactionSuccess: () => {
-      setAmount("");
-      onClose();
-    },
-    onTransactionError: setTxError,
-  });
+  // Один подписанный батч через релеер (ADR-0063): снять синт с аккаунта и
+  // развернуть его в токен, а при долге — погасить в голове того же батча.
+  // Долг хук читает сам, отдельных транзакций approve больше нет, и ETH в
+  // кошельке не нужен: за газ платит релеер.
+  const withdraw = useRelayedWithdrawMutation();
 
   const pending = withdraw.isPending;
-  // Отказ кошелька — в `withdraw.error` (SDK не зовёт колбэк на user-reject),
-  // реверт — в `txError`; показываем любой.
-  const error = withdraw.error ?? txError;
+  const error = withdraw.error;
 
   // `mutate` (not `mutateAsync`): a failed op surfaces via the mutation's
-  // `error` (rendered below); rejecting this handler would log an unhandled
-  // promise rejection via the `void` click binding.
+  // `error` (rendered below).
   function onSubmit() {
     if (accountId === undefined || amountWad <= 0n || invalid) return;
-    setTxError(null);
-    withdraw.mutate({ accountId, amountWad });
+    withdraw.mutate(
+      { accountId, amountWad, collateral: symbol },
+      {
+        onSuccess: () => {
+          setAmount("");
+          onClose();
+        },
+        // Без обработчика отказ стал бы unhandled rejection: клик связан через
+        // `void`. Сам текст показывается ниже из `withdraw.error`.
+        onError: () => {},
+      },
+    );
   }
 
   return (
@@ -165,7 +123,6 @@ export function WithdrawDialog({
           onChange={(next) => {
             setSymbol(next);
             setAmount("");
-            setTxError(null);
           }}
           testIdPrefix="withdraw"
         />

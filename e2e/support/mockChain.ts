@@ -149,6 +149,11 @@ function dispatch(
       return "0x56bc75e2d63100000"; // 100 ETH
     case "eth_getTransactionCount":
       return "0x0";
+    case "eth_getCode":
+      // An EOA with no delegate: a real node answers "0x" here, and the relay
+      // reads this to decide whether the batch still needs an EIP-7702
+      // authorization (ADR-0063).
+      return "0x";
     case "eth_gasPrice":
     case "eth_maxPriorityFeePerGas":
       return "0x3b9aca00";

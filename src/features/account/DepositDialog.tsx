@@ -1,9 +1,9 @@
 import { Margin } from "@liq/sdk";
 import {
   useAccountId,
-  useDepositMutation,
   useDepositableBalance,
   useNetworkId,
+  useRelayedDepositMutation,
 } from "@liq/react";
 import { formatUsd, getChainConfig, getCollaterals, wadToFixed } from "@liq/core";
 import { useState } from "react";
@@ -28,7 +28,10 @@ export function DepositDialog({
 }) {
   const accountId = useAccountId();
   const networkId = useNetworkId();
-  const deposit = useDepositMutation();
+  // Депозит едет одним подписанным батчем через релеер (ADR-0063): approve,
+  // wrap и modifyCollateral в одной транзакции, за которую платит он. Отдельных
+  // транзакций approve больше нет, ETH в кошельке не нужен.
+  const deposit = useRelayedDepositMutation();
   const [amount, setAmount] = useState("");
   // Депозитные токены контура из конфига SDK: на prod один USDC, на staging
   // ещё USDm.
@@ -60,9 +63,9 @@ export function DepositDialog({
           setAmount("");
           onClose();
         },
-        // An explicit error handler keeps a reverted deposit from becoming an
-        // unhandled rejection. The SDK does not surface the revert as
-        // `deposit.error` (monorepo#434) — the error-UI fix needs the SDK.
+        // Явный обработчик: без него отказ стал бы unhandled rejection.
+        // Отказы релея (allowlist, дедлайн, лимит, отказ симуляции) приходят
+        // в `deposit.error` и показываются ниже.
         onError: () => {},
       },
     );
