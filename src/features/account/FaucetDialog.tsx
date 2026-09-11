@@ -1,12 +1,8 @@
+import { USDC_DECIMALS } from "@liq/core";
 import {
-  INSUFFICIENT_GAS_MESSAGE,
-  isInsufficientGas,
-  USDC_DECIMALS,
-} from "@liq/core";
-import {
-  useClaimFaucetMutation,
   useFaucetState,
   useNetworkId,
+  useRelayedClaimFaucetMutation,
   useWallet,
 } from "@liq/react";
 import { getChainConfig } from "@liq/sdk";
@@ -20,9 +16,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { faucetRow, fmtRemaining } from "./faucetRow";
-
-/** Тестовый ETH на газ раздаёт сама сеть; наш фаусет — только USDC. */
-const MEGAETH_FAUCET_URL = "https://testnet.megaeth.com/";
 
 export function FaucetDialog({
   open,
@@ -51,20 +44,6 @@ export function FaucetDialog({
         {/* Тело монтируется только открытым: `useFaucetState` опрашивает
             цепь каждые 15с, и закрытый диалог не должен этого делать. */}
         {open && <FaucetBody />}
-        {/* Снаружи тела: ссылка нужна и когда фаусет USDC недоступен —
-            без ETH на газ не пройдёт даже Claim. */}
-        <p className="mt-3 text-[11px] text-muted">
-          Test ETH for gas:{" "}
-          <a
-            href={MEGAETH_FAUCET_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="text-accent underline"
-            data-testid="faucet-eth-link"
-          >
-            MegaETH testnet faucet ↗
-          </a>
-        </p>
       </DialogContent>
     </Dialog>
   );
@@ -84,7 +63,9 @@ function FaucetBody() {
     address: getChainConfig(networkId).contracts.USDC,
   };
   const state = useFaucetState([token]);
-  const claim = useClaimFaucetMutation();
+  // Клейм едет релеем (ADR-0063): за газ платит он, и пустому кошельку больше
+  // не нужно идти за тестовым ETH в кран сети, чтобы получить тестовые USDC.
+  const claim = useRelayedClaimFaucetMutation();
 
   if (state.isError) {
     return (
@@ -146,9 +127,7 @@ function FaucetBody() {
       })}
       {claim.error && (
         <p className="text-[11px] text-short" data-testid="faucet-claim-error">
-          {isInsufficientGas(claim.error)
-            ? `${INSUFFICIENT_GAS_MESSAGE} Send ETH to ${wallet ?? "your wallet"} and try again.`
-            : claim.error.message}
+          {claim.error.message}
         </p>
       )}
     </div>
